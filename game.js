@@ -65,6 +65,7 @@ const komadaiBlackEl = document.getElementById("komadai-black");
 const komadaiWhiteEl = document.getElementById("komadai-white");
 const modal = document.getElementById('modal');
 const message = document.getElementById('message');
+const statusEl = document.getElementById('status');
 
 const myUid = localStorage.getItem('shogi-uid') || "";
 
@@ -80,6 +81,8 @@ const roles = {"player1":1,"player2":2,"audience":0};
 let role = -1;
 let isHost = null;
 let interval = null;
+let state = null;
+let playerNames = [];
 
 async function load() {
   const { data, error } = await supabase
@@ -97,6 +100,7 @@ async function load() {
   if (data[0].status == 'PLAYING') {
     message.textContent = `${data[0].player1_name}(青) vs ${data[0].player2_name}(赤)`;
   }
+  playerNames = [data[0].player1_name, data[0].player2_name];
   if (data[0].player1_uid === myUid) {
     role = roles.player1;
     isHost = true;
@@ -118,6 +122,8 @@ async function load() {
   komadai.white = data[0].info.komadai.white;
   if ((role == 1 && currentPlayer == "black") || (role == 2 && currentPlayer == "white")) nowMoves = getLegalMoves(komadai, boardState, currentPlayer).moves;
   possibleMoves = [];
+  state = data[0].info.state;
+  renderState();
   renderBoard();
   renderKomadai();
   updateTurnUI();
@@ -135,6 +141,21 @@ async function load() {
         .update({ [playerCol]: now })
         .eq('id', roomId);
     }, 5000);
+  }
+}
+
+function renderState() {
+  switch (state) {
+    case "P1W":
+      statusEl.textContent = '対局終了　' + playerNames[0] + '(青) の勝利！';
+      break;
+    case "P2W":
+      statusEl.textContent = '対局終了　' + playerNames[1] + '(赤) の勝利！';
+      break;
+  
+    default:
+      statusEl.textContent = "";
+      break;
   }
 }
 
@@ -457,8 +478,22 @@ async function makeMove(from, to) {
   currentPlayer = currentPlayer === "black" ? "white" : "black";
 
   lastMove = {from, to};
+  
+  // 詰み判定
+  // --- 合法手の生成 ---
+  nowMoves = getLegalMoves(komadai, boardState, currentPlayer).moves;
+
+  // --- 合法手がない場合（詰み or 引き分け） ---
+  if (nowMoves.length === 0) {
+    if (isHost === false) {
+      state = 'P2W';
+    } else {
+      state = 'P1W';
+    }
+  }
 
   history.push(moveStr);
+  renderState();
   renderBoard();
   renderKomadai();
   updateTurnUI();
@@ -474,7 +509,8 @@ async function makeMove(from, to) {
           last: last,
           count: count,
           history: history,
-          lastMove: lastMove
+          lastMove: lastMove,
+          state: state
         }
       })
       .eq("id", roomId)
@@ -482,20 +518,6 @@ async function makeMove(from, to) {
     console.error(error);
   }
 
-  // 詰み判定
-  // --- 合法手の生成 ---
-  nowMoves = getLegalMoves(komadai, boardState, currentPlayer).moves;
-
-  // --- 合法手がない場合（詰み or 引き分け） ---
-  if (nowMoves.length === 0) {
-      const checked = isKingInCheck(boardState, currentPlayer);
-      if (checked) {
-        alert(`${currentPlayer == "black" ? "先手" : "後手"} の勝ちです。`);
-      } else {
-          // ステイルメイト（千日手など）→引き分け扱い
-        alert("引き分けです。");
-      }
-  }
   
 }
 function makeHistory(txt, n) {
@@ -612,7 +634,7 @@ function renderKomadai() {
   }
 }
 function updateTurnUI() {
-  turnEl.textContent = currentPlayer === "black" ? "後手 (△)" : "先手 (▲)";
+  turnEl.textContent = currentPlayer === "black" ? `${playerNames[0]}(青)` : `${playerNames[1]}(赤)`;
 }
 function reverse(r,p) {
     return p === "black" ? r : 8 - r;
@@ -633,6 +655,11 @@ const channel = supabase
     payload => {
       const oldData = payload.old;
       const newData = payload.new;
+      // ✅ 新しくplayer2が参加したときの処理
+      if (oldData.player2_uid == null && newData.player2_uid) {
+        load();
+        return;
+      }
 
       // ✅ player1_heartbeat / player2_heartbeat のみ変更なら無視
       const onlyHeartbeatChanged =
@@ -642,11 +669,6 @@ const channel = supabase
         oldData.player1_heartbeat === newData.player1_heartbeat);
 
       if (onlyHeartbeatChanged) {
-        return;
-      }
-      // ✅ 新しくplayer2が参加したときの処理
-      if (oldData.player2_uid == null && newData.player2_uid) {
-        load();
         return;
       }
       // payload.new に更新後の row オブジェクトが入るはず
@@ -666,6 +688,7 @@ const channel = supabase
         komadai.black = row.info.komadai?.black ? {...row.info.komadai.black} : komadai.black;
         komadai.white = row.info.komadai?.white ? {...row.info.komadai.white} : komadai.white;
         history = row.info.history ?? history;
+        state = row.info.state ?? state;
 
         // nowMoves を再計算（自分の手番なら）
         if ((role == 1 && currentPlayer == "black") || (role == 2 && currentPlayer == "white")) {
@@ -675,6 +698,7 @@ const channel = supabase
         }
 
         // UI 更新（安全なレンダリング）
+        renderState()
         renderBoard();
         renderKomadai();
         updateTurnUI();

@@ -84,8 +84,6 @@ async function loadRooms() {
             gameDiv.appendChild(vsSpan);
             gameDiv.appendChild(p2Span);
             gamesEl.appendChild(gameDiv);
-        } else {
-            console.log('N/A', room);
         }
     });
 
