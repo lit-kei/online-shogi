@@ -144,8 +144,8 @@ function renderBoard() {
       const sq = document.createElement("div");
       sq.className = "square";
       sq.dataset.r = isHost === false ? reverse(r, "white") : r;
-      sq.dataset.c = c;
-      const piece = boardState[isHost === false ? reverse(r, "white") : r][c];
+      sq.dataset.c = isHost === false ? reverse(c, "white") : c;
+      const piece = boardState[isHost === false ? reverse(r, "white") : r][isHost === false ? reverse(c, "white") : c];
       if (piece) {
         const p = document.createElement("div");
         p.className = "piece";
@@ -154,7 +154,7 @@ function renderBoard() {
         p.dataset.player = piece.p;
         p.dataset.rotate = isHost === false ? piece.p === 'black' : piece.p === 'white';
         p.dataset.r = isHost === false ? reverse(r, "white") : r;
-        p.dataset.c = c;
+        p.dataset.c = isHost === false ? reverse(c, "white") : c;
         if (role == 1 && piece.p == "black") {
           sq.style.cursor = 'pointer';
         } else if (role == 2 && piece.p == "white") {
@@ -163,14 +163,14 @@ function renderBoard() {
         sq.appendChild(p);
       }
       if (lastMove !== null && !lastMove.from.put) {
-        if (lastMove.from.r == isHost === false ? reverse(r, "white") : r && lastMove.from.c == c) {
+        if (lastMove.from.r == (isHost === false ? reverse(r, "white") : r) && lastMove.from.c == (isHost === false ? reverse(c, "white") : c)) {
           sq.classList.add('last-from');
         }
       }
       if (
         lastMove?.to &&
         (isHost === false ? reverse(r, "white") : r) === lastMove.to.r &&
-        lastMove.to.c === c
+        lastMove.to.c === (isHost === false ? reverse(c, "white") : c)
       ) {
         sq.classList.add('last-to');
       }
