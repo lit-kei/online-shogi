@@ -47,7 +47,6 @@ const toJa = {1:["１","一"],2:["２","二"],3:["３","三"],4:["４","四"],5:
 
 let onlyKings = false;
 let allKoma = false;
-let boardHistory = []
 let boardState = [];
 let last = [-1,-1];
 let lastMove = null;
@@ -56,6 +55,7 @@ let selected = null;
 let count = 0;
 let put = null;
 let nowMoves = [];
+let history = [];
 let possibleMoves = [];
 const komadai = { black: {}, white: {} };
 const boardEl = document.getElementById("board");
@@ -95,7 +95,7 @@ async function load() {
     return;
   }
   if (data[0].status == 'PLAYING') {
-    message.textContent = `${data[0].player1_name} vs ${data[0].player2_name}`;
+    message.textContent = `${data[0].player1_name}(青) vs ${data[0].player2_name}(赤)`;
   }
   if (data[0].player1_uid === myUid) {
     role = roles.player1;
@@ -112,6 +112,7 @@ async function load() {
   selected = null;
   count = data[0].info.count;
   put = null;
+  history = data[0].info.history;
   lastMove = data[0].info.lastMove;
   komadai.black = data[0].info.komadai.black;
   komadai.white = data[0].info.komadai.white;
@@ -120,6 +121,7 @@ async function load() {
   renderBoard();
   renderKomadai();
   updateTurnUI();
+  renderHistory();
   if ((role === roles.player1 || role === roles.player2) && interval == null) {
     interval = setInterval(async () => {
       const now = new Date().toISOString();
@@ -150,6 +152,7 @@ function renderBoard() {
         p.textContent = mapping[piece.t].display;
         p.draggable = false;
         p.dataset.player = piece.p;
+        p.dataset.rotate = isHost === false ? piece.p === 'black' : piece.p === 'white';
         p.dataset.r = isHost === false ? reverse(r, "white") : r;
         p.dataset.c = c;
         if (role == 1 && piece.p == "black") {
@@ -174,6 +177,13 @@ function renderBoard() {
       if ((role == 1 && currentPlayer == "black") || (role == 2 && currentPlayer == "white")) sq.addEventListener("click", onSquareClick);
       boardEl.appendChild(sq);
     }
+  }
+}
+function renderHistory() {
+  historyEl.innerHTML = '';
+  for (let index = 0; index < history.length; index++) {
+    const element = history[index];
+    makeHistory(element);
   }
 }
 async function onSquareClick(e) {
@@ -428,14 +438,29 @@ async function makeMove(from, to) {
   }
   currentPlayer = currentPlayer === "black" ? "white" : "black";
 
-  const newKomadai = cloneKomadai(komadai);
-  const newBoardState = cloneBoard(boardState)
-  makeHistory(moveStr);
+  history.push(moveStr);
   renderBoard();
   renderKomadai();
   updateTurnUI();
+  renderHistory();
 
-  await new Promise(resolve => setTimeout(resolve, 1));
+  const {error} = await supabase
+      .from("rooms")
+      .update({
+        info: {
+          board: boardState,
+          komadai: komadai,
+          currentPlayer: currentPlayer,
+          last: last,
+          count: count,
+          history: history,
+          lastMove: {from, to}
+        }
+      })
+      .eq("id", roomId)
+  if (error) {
+    console.error(error);
+  }
 
   // 詰み判定
   // --- 合法手の生成 ---
@@ -606,6 +631,7 @@ const channel = supabase
         count = row.info.count ?? count;
         komadai.black = row.info.komadai?.black ? {...row.info.komadai.black} : komadai.black;
         komadai.white = row.info.komadai?.white ? {...row.info.komadai.white} : komadai.white;
+        history = row.info.history ?? history;
 
         // nowMoves を再計算（自分の手番なら）
         if ((role == 1 && currentPlayer == "black") || (role == 2 && currentPlayer == "white")) {
@@ -618,6 +644,7 @@ const channel = supabase
         renderBoard();
         renderKomadai();
         updateTurnUI();
+        renderHistory();
 
       } catch (err) {
         console.error('Realtime apply error:', err);

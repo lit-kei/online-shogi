@@ -104,10 +104,10 @@ h1 {
   background: transparent;
   color: #ffdd99;
 }
-.piece[data-player="black"] {
+.piece[data-rotate="false"] {
   transform: rotate(0deg);
 }
-.piece[data-player="white"] {
+.piece[data-rotate="true"] {
   transform: rotate(180deg);
 }
 .side {
