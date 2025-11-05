@@ -79,8 +79,9 @@ const roomId = urlParams.get('room');
 const roles = {"player1":1,"player2":2,"audience":0};
 let role = -1;
 let isHost = null;
+let interval = null;
 
-async function init() {
+async function load() {
   const { data, error } = await supabase
     .from('rooms')  // テーブル名
     .select('*')
@@ -93,8 +94,8 @@ async function init() {
     message.textContent = "不正な部屋です。";
     return;
   }
-  if (data[0].status = 'PLAYING') {
-    message.textContent = `${roomId.player1_name} vs ${roomId.player2_name}`
+  if (data[0].status == 'PLAYING') {
+    message.textContent = `${data[0].player1_name} vs ${data[0].player2_name}`;
   }
   if (data[0].player1_uid === myUid) {
     role = roles.player1;
@@ -119,8 +120,8 @@ async function init() {
   renderBoard();
   renderKomadai();
   updateTurnUI();
-  if (role === roles.player1 || role === roles.player2) {
-    setInterval(async () => {
+  if ((role === roles.player1 || role === roles.player2) && interval == null) {
+    interval = setInterval(async () => {
       const now = new Date().toISOString();
 
       // 自分がplayer1かplayer2かを区別
@@ -148,7 +149,7 @@ function renderBoard() {
         p.className = "piece";
         p.textContent = mapping[piece.t].display;
         p.draggable = false;
-        p.dataset.player = piece.p;
+        p.dataset.player = isHost ? piece.p : piece.p == 'black' ? 'white' : 'black';
         p.dataset.r = isHost === false ? reverse(r, "white") : r;
         p.dataset.c = c;
         if (role == 1 && piece.p == "black") {
@@ -571,4 +572,69 @@ function updateTurnUI() {
 function reverse(r,p) {
     return p === "black" ? r : 8 - r;
 }
-init();
+load();
+
+// subscribe 部分をこのように置き換えます
+const channel = supabase
+  .channel(`rooms:${roomId}`) // 任意の名前
+  .on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'rooms',
+      filter: `id=eq.${roomId}`
+    },
+    payload => {
+      if (payload.old.player2_uid == null && payload.new.player2_uid) {
+        load();
+        return; 
+      }
+      // payload.new に更新後の row オブジェクトが入るはず
+      const row = payload?.new;
+      if (!row || !row.info) return;
+
+      // info の中身だけ差分反映する（破壊的に上書きせず、安全に）
+      try {
+        // 既存の boardState 等を上書きする前に null/未定義チェック
+        if (row.info.board) {
+          boardState = cloneBoard(row.info.board);
+        }
+        last = row.info.last || [-1, -1];
+        lastMove = row.info.lastMove ?? null;
+        currentPlayer = row.info.currentPlayer ?? currentPlayer;
+        count = row.info.count ?? count;
+        komadai.black = row.info.komadai?.black ? {...row.info.komadai.black} : komadai.black;
+        komadai.white = row.info.komadai?.white ? {...row.info.komadai.white} : komadai.white;
+
+        // nowMoves を再計算（自分の手番なら）
+        if ((role == 1 && currentPlayer == "black") || (role == 2 && currentPlayer == "white")) {
+          nowMoves = getLegalMoves(komadai, boardState, currentPlayer).moves;
+        } else {
+          nowMoves = [];
+        }
+
+        // UI 更新（安全なレンダリング）
+        renderBoard();
+        renderKomadai();
+        updateTurnUI();
+
+      } catch (err) {
+        console.error('Realtime apply error:', err);
+        // 最終手段で load() を呼ぶ（例外時のみ）
+        load();
+      }
+    }
+  )
+  .subscribe();
+
+// ブラウザを閉じる・離れるときに購読解除
+window.addEventListener('beforeunload', async () => {
+  try {
+    await supabase.removeChannel(channel);
+  } catch (e) {
+    // 互換性により channel.unsubscribe() を使う実装もある
+    try { channel.unsubscribe(); } catch (_) {}
+  }
+});
+

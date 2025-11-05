@@ -104,7 +104,7 @@ const channel = supabase
         const gameDiv = document.createElement('div');
         gameDiv.className = 'game';
         gameDiv.addEventListener('click', async () => {
-            if (room.player2_uid === null) {
+            if (payload.new.player2_uid === null) {
                     
                 const { data, error } = await supabase
                     .from("rooms")
@@ -114,7 +114,7 @@ const channel = supabase
                     player2_heartbeat: new Date().toISOString(),
                     status: "PLAYING"
                     })
-                    .eq('id', room.id);
+                    .eq('id', payload.new.id);
 
                 if (error) {
                     console.error("部屋入室エラー:", error);
@@ -122,7 +122,7 @@ const channel = supabase
                     return;
                 }
 
-                window.location.href = `./game.html?room=${room.id}`;
+                window.location.href = `./game.html?room=${payload.new.id}`;
 
             }
         });
