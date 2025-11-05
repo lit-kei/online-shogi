@@ -230,6 +230,18 @@ function getMoveList(board, r, c, friendFire = false) {
     });
     return list;
 }
+function cloneBoard(board) {
+  return board.map(row => row.map(cell => cell ? {...cell} : null));
+}
+
+function cloneKomadai(koma) {
+  const newKomadai = {};
+  for (const player of Object.keys(koma)) {
+    newKomadai[player] = {...koma[player]};
+  }
+  return newKomadai;
+}
+
 function getLegalMoves(koma, board,p) {
     const moves = [];
     for (let r = 0; r < 9; r++) {
