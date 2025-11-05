@@ -40,97 +40,137 @@ const onlyKingsBoard = [
   [null,null,null,null,null,null,null,null,null],
   [null,null,null,null,{t:14,p:'black'},null,null,null,null],
 ];
-const onlyKingsKomadai = {
-  black: {1:9, 2:2, 3:2, 4:2, 5:2, 6:1, 7:1},
-  white: {1:9, 2:2, 3:2, 4:2, 5:2, 6:1, 7:1}
-};
-const allKomadai = {
-  black: {},
-  white: {1:18, 2:4, 3:4, 4:4, 5:4, 6:2, 7:2}
-};
+
 const promote = [false,8,9,10,11,false,12,13,false,false,false,false,false,false,false,false];
 const toJa = {1:["１","一"],2:["２","二"],3:["３","三"],4:["４","四"],5:["５","五"],6:["６","六"],7:["７","七"],8:["８","八"],9:["９","九"]};
-const masuValue = [
-[3,3,3,3,3,3,3,3,3],
-[3,3,3,3,3,3,3,3,3],
-[3,3,3,3,3,3,3,3,3],
-[2,2,2,2,2,2,2,2,2],
-[2,2,2,2,2,2,2,2,2],
-[2,2,2,2,2,2,2,2,2],
-[1,1,1,1,1,1,1,1,1],
-[3,3,3,3,3,3,3,3,3],
-[3,3,3,3,3,3,3,3,3]
-];
 
 
 let onlyKings = false;
 let allKoma = false;
-let boardHistory = [];
-let searchDepth = 4;
-let maxPutWidth = 30;
-let aiMode = {white: false, black: false};
+let boardHistory = []
 let boardState = [];
 let last = [-1,-1];
+let lastMove = null;
 let currentPlayer = "white";
 let selected = null;
 let count = 0;
 let put = null;
-let finish = true;
 let nowMoves = [];
 let possibleMoves = [];
 const komadai = { black: {}, white: {} };
 const boardEl = document.getElementById("board");
 const turnEl = document.getElementById("turn");
+const historyEl = document.getElementById('history');
 const komadaiBlackEl = document.getElementById("komadai-black");
 const komadaiWhiteEl = document.getElementById("komadai-white");
 const modal = document.getElementById('modal');
-function init() {
-  boardHistory = [];
-  boardState = cloneBoard(onlyKings ? onlyKingsBoard : initialSetup);
-  last = [-1,-1];
-  currentPlayer = "white";
-  selected = null;
-  count = 0;
-  put = null;
-  finsih = true;
-  if (onlyKings) {
-    if (allKoma) {
-      komadai.black = allKomadai.black;
-      komadai.white = allKomadai.white;
-    } else {
-      komadai.black = onlyKingsKomadai.black;
-      komadai.white = onlyKingsKomadai.white;
-    }
-  } else {
-    komadai.black = {};
-    komadai.white = {};
+const message = document.getElementById('message');
+
+const myUid = localStorage.getItem('shogi-uid') || "";
+
+const SUPABASE_URL = "https://fveqlysrpudyomvskryk.supabase.co"; // ← ここ書き換える
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2ZXFseXNycHVkeW9tdnNrcnlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzMjA5NjcsImV4cCI6MjA3Nzg5Njk2N30.zfmndX_YMeaq0eDgxG9ecjBpJS5KRDkmBaBFO7Iz9Yk";
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get('room');
+const roles = {"player1":1,"player2":2,"audience":0};
+let role = -1;
+let isHost = null;
+
+async function init() {
+  const { data, error } = await supabase
+    .from('rooms')  // テーブル名
+    .select('*')
+    .eq('id', roomId);
+  if (error || data.length === 0) {
+    message.textContent = "部屋が見つかりませんでした。";
+    return;
   }
-  nowMoves = getLegalMoves(komadai, boardState, currentPlayer).moves;
+  if (data[0].player1_uid === data[0].player2_uid) {
+    message.textContent = "不正な部屋です。";
+    return;
+  }
+  if (data[0].status = 'PLAYING') {
+    message.textContent = `${roomId.player1_name} vs ${roomId.player2_name}`
+  }
+  if (data[0].player1_uid === myUid) {
+    role = roles.player1;
+    isHost = true;
+  } else if (data[0].player2_uid === myUid) {
+    role = roles.player2;
+    isHost = false;
+  } else {
+    role = roles.audience;
+  }
+  boardState = cloneBoard(data[0].info.board);
+  last = data[0].info.last || [-1, -1];
+  currentPlayer = data[0].info.currentPlayer;
+  selected = null;
+  count = data[0].info.count;
+  put = null;
+  lastMove = data[0].info.lastMove;
+  komadai.black = data[0].info.komadai.black;
+  komadai.white = data[0].info.komadai.white;
+  if ((role == 1 && currentPlayer == "black") || (role == 2 && currentPlayer == "white")) nowMoves = getLegalMoves(komadai, boardState, currentPlayer).moves;
   possibleMoves = [];
   renderBoard();
   renderKomadai();
   updateTurnUI();
+  if (role === roles.player1 || role === roles.player2) {
+    setInterval(async () => {
+      const now = new Date().toISOString();
+
+      // 自分がplayer1かplayer2かを区別
+      const playerCol = isHost ? 'player1_heartbeat' : 'player2_heartbeat';
+
+      await supabase
+        .from('rooms')
+        .update({ [playerCol]: now })
+        .eq('id', roomId);
+    }, 5000);
+  }
 }
+
 function renderBoard() {
   boardEl.innerHTML = "";
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
       const sq = document.createElement("div");
       sq.className = "square";
-      sq.dataset.r = r;
+      sq.dataset.r = isHost === false ? reverse(r, "white") : r;
       sq.dataset.c = c;
-      const piece = boardState[r][c];
+      const piece = boardState[isHost === false ? reverse(r, "white") : r][c];
       if (piece) {
         const p = document.createElement("div");
         p.className = "piece";
         p.textContent = mapping[piece.t].display;
         p.draggable = false;
         p.dataset.player = piece.p;
-        p.dataset.r = r;
+        p.dataset.r = isHost === false ? reverse(r, "white") : r;
         p.dataset.c = c;
+        if (role == 1 && piece.p == "black") {
+          sq.style.cursor = 'pointer';
+        } else if (role == 2 && piece.p == "white") {
+          sq.style.cursor = 'pointer';
+        }
         sq.appendChild(p);
       }
-      sq.addEventListener("click", onSquareClick);
+      if (lastMove !== null && !lastMove.from.put) {
+        if (lastMove.from.r == isHost === false ? reverse(r, "white") : r && lastMove.from.c == c) {
+          sq.classList.add('last-from');
+        }
+      }
+      if (
+        lastMove?.to &&
+        (isHost === false ? reverse(r, "white") : r) === lastMove.to.r &&
+        lastMove.to.c === c
+      ) {
+        sq.classList.add('last-to');
+      }
+      if ((role == 1 && currentPlayer == "black") || (role == 2 && currentPlayer == "white")) sq.addEventListener("click", onSquareClick);
       boardEl.appendChild(sq);
     }
   }
@@ -317,29 +357,6 @@ function getLegalMoves(koma, board,p) {
     });
     return {moves: safeMoves, change};
 }
-function backTo(n, target) {
-  if (0 > n || n >= count) return;
-  const e = boardHistory[n];
-  komadai.black = JSON.parse(JSON.stringify(e.komadai.black));
-  komadai.white = JSON.parse(JSON.stringify(e.komadai.white));
-  boardState = e.boardState.map((row) =>
-    row.map((cell) => (cell ? { ...cell } : null))
-  );
-  last = [...e.last];
-  currentPlayer = e.currentPlayer;
-  count = e.count;
-  let next = target.nextElementSibling;
-
-  while (next) {
-    const toRemove = next;
-    next = next.nextElementSibling;
-    toRemove.remove();
-  }
-
-  renderBoard();
-  renderKomadai();
-  updateTurnUI();
-}
 function onKomadaiClick(e) {
     const sq = e.currentTarget;
     const p = sq.dataset.p;
@@ -412,7 +429,7 @@ async function makeMove(from, to) {
 
   const newKomadai = cloneKomadai(komadai);
   const newBoardState = cloneBoard(boardState)
-  boardHistory.push({komadai: newKomadai, boardState: newBoardState, last: [...last], currentPlayer, count});
+  makeHistory(moveStr);
   renderBoard();
   renderKomadai();
   updateTurnUI();
@@ -434,6 +451,20 @@ async function makeMove(from, to) {
       }
   }
   
+}
+function makeHistory(txt) {
+    const historyDiv = document.createElement('div');
+    historyDiv.className = "history";
+    const countSpan = document.createElement('span');
+    countSpan.textContent = count + ".";
+    countSpan.className = "count";
+    const kifuSpan = document.createElement('span');
+    kifuSpan.textContent = txt;
+    kifuSpan.className = "kifu";
+    historyDiv.appendChild(countSpan);
+    historyDiv.appendChild(kifuSpan);
+    historyEl.appendChild(historyDiv);
+    historyEl.scrollTop = historyEl.scrollHeight;
 }
 function getAttackSquares(board, player) {
     const attackSquares = [];
@@ -524,7 +555,12 @@ function renderKomadai() {
       span.textContent = `${mapping[k].display} x${map[k]}`;
       span.dataset.t = k;
       span.dataset.p = ownerKey;
-      span.addEventListener('click', onKomadaiClick);
+      if (role == 1 && ownerKey == "black") {
+        span.style.cursor = 'pointer';
+      } else if (role == 2 && ownerKey == "white") {
+        span.style.cursor = 'pointer';
+      }
+      if ((role == 1 && currentPlayer == "black") || (role == 2 && currentPlayer == "white")) span.addEventListener('click', onKomadaiClick);
       ownerEl.appendChild(span);
     });
   }
@@ -535,16 +571,4 @@ function updateTurnUI() {
 function reverse(r,p) {
     return p === "black" ? r : 8 - r;
 }
-document.getElementById("btn-reset").addEventListener("click", () => {
-  if(confirm("本当に初期化しますか？")) init();
-});
 init();
-window.getBoardState = () => boardState;
-window.getCurrentPlayer = () => currentPlayer;
-window.doMove = (from, to) => {
-  makeMove(from, to);
-};
-window.getKomadai = () => komadai;
-console.log(
-  "将棋GUIロード完了。window.getBoardState(), window.doMove({r,c},{r,c}) などを使えます。"
-);

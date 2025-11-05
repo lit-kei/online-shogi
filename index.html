@@ -11,13 +11,18 @@
     
     <div class="container">
         <h1>オンライン将棋待合室</h1>
-        <p>部屋一覧</p>
-        <div id="player">
-        </div>
         <button id="createRoom" class="start-btn">部屋を作る</button>
+        <p>部屋一覧</p>
+        <div id="games">
+            <div class="game">
+                <span class="p1">まつけん</span>
+                <span> vs </span>
+                <span class="p2">おれ</span>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="main.js"></script>
+    <script src="main.js" type="module"></script>
 </body>
 </html>

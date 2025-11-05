@@ -1,18 +1,23 @@
 :root {
   --board-size: 540px;
   --square-size: calc(var(--board-size) / 9);
-  --bg: #f2e9de;
-  --line: #3b2f2f;
-  --accent: #ffd27f;
+  --bg: #1a1a1a;
+  --line: #e6c68e;
+  --accent: #7f5c26;
+  --text-light: #f0e6d2;
+  --panel-bg: #2b2b2b;
+  --button-bg: #5a4530;
+  --button-hover: #7a5f46;
 }
 body {
   font-family: "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-  background: #faf7f3;
+  background: #0f0f0f;
   padding: 0 24px;
-  color: #222;
+  color: var(--text-light);
 }
 h1 {
   margin: 0 0 12px 0;
+  color: var(--text-light);
 }
 .wrapper {
   display: flex;
@@ -24,61 +29,54 @@ h1 {
   background: var(--bg);
   padding: 50px;
   border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 18px rgba(255, 255, 255, 0.08);
   position: relative;
 }
 .modal {
-    position: absolute;
-    display: none;
-    height: 100%;
-    width: 100%;
-    top: 0;
-    left: 0;
-    z-index: 3;
-    border-radius: 10px;
-    background-color: rgba(0, 0, 0, 0.2);
+  position: absolute;
+  display: none;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.6);
 }
 .modal-content {
-    height: 80px;
-    width: 300px;
-    padding: 15px;
-    border-radius: 5px;
-    margin: 264px auto;
-    background-color: white;
+  height: 80px;
+  width: 300px;
+  padding: 15px;
+  border-radius: 5px;
+  margin: 264px auto;
+  background-color: #2e2e2e;
+  color: var(--text-light);
 }
 .modal-content span {
-    font-size: 20px;
-}
-.buttons {
-    display: flex;
-    margin: 15px auto 0;
-    justify-content: space-evenly;
-}
-.modal-content button {
-    width: 80px;
+  font-size: 20px;
 }
 .yoko-nums,
 .tate-nums {
-    position: absolute;
-    display: flex;
-    justify-content: space-between;
+  position: absolute;
+  display: flex;
+  justify-content: space-between;
 }
 .yoko-nums {
-    top: 15px;
-    left: 80px;
-    width: 488px;
-    flex-direction: row;
+  top: 15px;
+  left: 80px;
+  width: 488px;
+  flex-direction: row;
 }
 .tate-nums {
-    right: 20px;
-    top: 70px;
-    height: 508px;
-    margin-bottom: 30px;
-    flex-direction: column;
+  right: 20px;
+  top: 70px;
+  height: 508px;
+  margin-bottom: 30px;
+  flex-direction: column;
 }
 .num {
-    font-size: 20px;
-    color: #222;
+  font-size: 20px;
+  color: #d8c690;
 }
 .board {
   width: var(--board-size);
@@ -88,10 +86,11 @@ h1 {
   grid-template-rows: repeat(9, 1fr);
   border: 4px solid var(--line);
   position: relative;
+  background-color: #2a2a2a;
 }
 .square {
   box-sizing: border-box;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -100,23 +99,16 @@ h1 {
 .piece {
   font-size: 22px;
   line-height: 1;
-  cursor: pointer;
   padding: 6px 8px;
   border-radius: 6px;
   background: transparent;
+  color: #ffdd99;
 }
 .piece[data-player="black"] {
   transform: rotate(0deg);
 }
 .piece[data-player="white"] {
   transform: rotate(180deg);
-}
-.square.highlight {
-  background: var(--accent);
-}
-.square.selected {
-  outline: 3px solid #ff9f3f;
-  z-index: 2;
 }
 .side {
   margin: 15px 0;
@@ -125,10 +117,10 @@ h1 {
 .komadai,
 .controls,
 .moves {
-  background: #fff;
+  background: var(--panel-bg);
   padding: 12px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
   margin-bottom: 12px;
 }
 .komadai .pile {
@@ -139,49 +131,66 @@ h1 {
 .komadai .cap {
   padding: 6px 8px;
   border-radius: 6px;
-  background: #f6f0ea;
-  cursor: pointer;
+  background: #3a3a3a;
+  color: #f4e1b0;
   outline: none;
 }
 .cap.selected {
-    outline: 3px solid #ff9f3f;
-}
-button {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: none;
-  background: #6a4f3b;
-  color: #fff;
-  cursor: pointer;
+  outline: 3px solid var(--accent);
 }
 .controls {
   display: flex;
-  gap:40px;
+  gap: 40px;
   align-items: center;
 }
 .moves pre {
   white-space: pre-wrap;
   font-family: monospace;
   font-size: 13px;
+  color: #e6d8b4;
 }
-#ai {
+
+.buttons {
   display: flex;
-  width: 100%;
-  gap: 20px;
-  flex-wrap: wrap;
+  margin: 15px auto 0;
+  justify-content: space-evenly;
 }
-.shot {
-  width: 150px;
-  background: white;
-  border-radius: 10px;
-  margin: 20px 0;
-  height: 93px;
-  padding: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-  text-align: center;
+.modal-content button {
+  width: 80px;
+}
+button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background-color: var(--button-bg);
+  color: #f4e1b0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+button:hover {
+  background-color: var(--button-hover);
 }
 .title {
   margin: 0;
+}
+.square:has(.piece[data-player="black"]) {
+  background: #2d2a36;
+}
+.square:has(.piece[data-player="white"]) {
+  background: #3b2a27;
+}
+.square.selected {
+  outline: 3px solid var(--accent);
+  z-index: 2;
+}
+.square.last-from {
+  background: #475a48 !important;
+}
+.square.last-to {
+  background: #3b4d3d !important;
+}
+.square.highlight {
+  background: var(--accent) !important;
 }
 @media (max-width: 1000px) {
   .wrapper {
