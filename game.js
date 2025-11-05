@@ -122,6 +122,7 @@ async function load() {
   renderKomadai();
   updateTurnUI();
   renderHistory();
+  renderNumber();
   if ((role === roles.player1 || role === roles.player2) && interval == null) {
     interval = setInterval(async () => {
       const now = new Date().toISOString();
@@ -134,6 +135,23 @@ async function load() {
         .update({ [playerCol]: now })
         .eq('id', roomId);
     }, 5000);
+  }
+}
+
+function renderNumber() {
+  const yoko = document.getElementById('yoko');
+  yoko.innerHTML = '';
+  const tate = document.getElementById('tate');
+  tate.innerHTML = '';
+  for (let i = 1; i < 10; i++) {
+    const yokoN = document.createElement('span');
+    yokoN.className = 'num';
+    yokoN.textContent = toJa[isHost === false ? i : 10 - i][0];
+    yoko.appendChild(yokoN);
+    const tateN = document.createElement('span');
+    tateN.className = 'num';
+    tateN.textContent = toJa[isHost === false ? 10 - i : i][1];
+    tate.appendChild(tateN);
   }
 }
 
@@ -438,6 +456,8 @@ async function makeMove(from, to) {
   }
   currentPlayer = currentPlayer === "black" ? "white" : "black";
 
+  lastMove = {from, to};
+
   history.push(moveStr);
   renderBoard();
   renderKomadai();
@@ -454,7 +474,7 @@ async function makeMove(from, to) {
           last: last,
           count: count,
           history: history,
-          lastMove: {from, to}
+          lastMove: lastMove
         }
       })
       .eq("id", roomId)
