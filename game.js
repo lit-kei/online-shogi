@@ -149,7 +149,7 @@ function renderBoard() {
         p.className = "piece";
         p.textContent = mapping[piece.t].display;
         p.draggable = false;
-        p.dataset.player = isHost ? piece.p : piece.p == 'black' ? 'white' : 'black';
+        p.dataset.player = piece.p;
         p.dataset.r = isHost === false ? reverse(r, "white") : r;
         p.dataset.c = c;
         if (role == 1 && piece.p == "black") {
@@ -583,7 +583,7 @@ const channel = supabase
       event: 'UPDATE',
       schema: 'public',
       table: 'rooms',
-      filter: `id=eq.${roomId}`
+      filter: `id=eq.${roomId} AND NOT(column_name).in.("player1_heartbeat","player2_heartbeat")`
     },
     payload => {
       if (payload.old.player2_uid == null && payload.new.player2_uid) {

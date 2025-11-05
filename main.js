@@ -133,7 +133,7 @@ const channel = supabase
         vsSpan.textContent = 'vs';
         const p2Span = document.createElement('span');
         p2Span.className = 'p2';
-        p2Span.textContent = payload.new.player2_name ? payload.new.player2_name : "";
+        p2Span.textContent = payload.new.player2_name ? payload.new.player2_name : "募集中";
         gameDiv.appendChild(p1Span);
         gameDiv.appendChild(vsSpan);
         gameDiv.appendChild(p2Span);
