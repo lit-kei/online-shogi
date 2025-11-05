@@ -616,13 +616,14 @@ const channel = supabase
 
       // ✅ player1_heartbeat / player2_heartbeat のみ変更なら無視
       const onlyHeartbeatChanged =
-        oldData.player1_heartbeat !== newData.player1_heartbeat &&
-        oldData.player2_heartbeat === newData.player2_heartbeat ||
-        oldData.player2_heartbeat !== newData.player2_heartbeat &&
-        oldData.player1_heartbeat === newData.player1_heartbeat;
+        (oldData.player1_heartbeat !== newData.player1_heartbeat &&
+        oldData.player2_heartbeat === newData.player2_heartbeat) ||
+        (oldData.player2_heartbeat !== newData.player2_heartbeat &&
+        oldData.player1_heartbeat === newData.player1_heartbeat);
 
-      if (onlyHeartbeatChanged) return;
-
+      if (onlyHeartbeatChanged) {
+        return;
+      }
       // ✅ 新しくplayer2が参加したときの処理
       if (oldData.player2_uid == null && newData.player2_uid) {
         load();
