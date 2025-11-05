@@ -183,7 +183,7 @@ function renderHistory() {
   historyEl.innerHTML = '';
   for (let index = 0; index < history.length; index++) {
     const element = history[index];
-    makeHistory(element);
+    makeHistory(element, index + 1);
   }
 }
 async function onSquareClick(e) {
@@ -478,11 +478,11 @@ async function makeMove(from, to) {
   }
   
 }
-function makeHistory(txt) {
+function makeHistory(txt, n) {
     const historyDiv = document.createElement('div');
     historyDiv.className = "history";
     const countSpan = document.createElement('span');
-    countSpan.textContent = count + ".";
+    countSpan.textContent = n + ".";
     countSpan.className = "count";
     const kifuSpan = document.createElement('span');
     kifuSpan.textContent = txt;
@@ -608,12 +608,25 @@ const channel = supabase
       event: 'UPDATE',
       schema: 'public',
       table: 'rooms',
-      filter: `id=eq.${roomId} AND NOT(column_name).in.("player1_heartbeat","player2_heartbeat")`
+      filter: `id=eq.${roomId}`
     },
     payload => {
-      if (payload.old.player2_uid == null && payload.new.player2_uid) {
+      const oldData = payload.old;
+      const newData = payload.new;
+
+      // ✅ player1_heartbeat / player2_heartbeat のみ変更なら無視
+      const onlyHeartbeatChanged =
+        oldData.player1_heartbeat !== newData.player1_heartbeat &&
+        oldData.player2_heartbeat === newData.player2_heartbeat ||
+        oldData.player2_heartbeat !== newData.player2_heartbeat &&
+        oldData.player1_heartbeat === newData.player1_heartbeat;
+
+      if (onlyHeartbeatChanged) return;
+
+      // ✅ 新しくplayer2が参加したときの処理
+      if (oldData.player2_uid == null && newData.player2_uid) {
         load();
-        return; 
+        return;
       }
       // payload.new に更新後の row オブジェクトが入るはず
       const row = payload?.new;
