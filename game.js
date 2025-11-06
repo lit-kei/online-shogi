@@ -636,7 +636,7 @@ function renderKomadai() {
   }
 }
 function updateTurnUI() {
-  turnEl.textContent = currentPlayer === "black" ? `${playerNames[0]}(青)` : `${playerNames[1]}(赤)`;
+  turnEl.textContent = currentPlayer === "black" ? `${playerNames[0] ?? "先手"}(青)` : `${playerNames[1] ?? "後手"}(赤)`;
 }
 function reverse(r,p) {
     return p === "black" ? r : 8 - r;
