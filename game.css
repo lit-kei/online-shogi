@@ -174,21 +174,21 @@ button:hover {
   margin: 0;
 }
 .square:has(.piece[data-player="black"]) {
-  background: #2d2a36;
+  background: rgba(120, 170, 255, 0.18); /* ほんのり青背景 */
 }
 .square:has(.piece[data-player="white"]) {
-  background: #3b2a27;
+  background: rgba(255, 100, 100, 0.18); /* ほんのり赤背景 */
 }
-/* 先手（黒）用 - 明るく映える赤系 */
+/* 先手（黒）用 - 明るめの赤系背景 */
 .piece[data-player="black"] {
-  color: #ff6b6b; /* 明るめレッド */
-  text-shadow: 0 0 3px rgba(255, 80, 80, 0.75);
+  color: #6bb6ff;
+  text-shadow: 0 0 3px rgba(80, 150, 255, 0.75);
 }
 
-/* 後手（白）用 - 明るく映える青系 */
+/* 後手（白）用 - 明るめの青系背景 */
 .piece[data-player="white"] {
-  color: #6bb6ff; /* 明るめブルー */
-  text-shadow: 0 0 3px rgba(80, 150, 255, 0.75);
+  color: #ff6b6b;
+  text-shadow: 0 0 3px rgba(255, 80, 80, 0.75);
 }
 .square.selected {
   outline: 3px solid var(--accent);
