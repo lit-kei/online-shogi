@@ -100,7 +100,7 @@ async function load() {
   if (data[0].status == 'PLAYING') {
     message.textContent = `${data[0].player1_name}(青) vs ${data[0].player2_name}(赤)`;
     document.getElementById('p1-koma').textContent = `${data[0].player1_name}(青)`;
-    document.getElementById('p2-koma').textContent = `${data[1].player1_name}(赤)`;
+    document.getElementById('p2-koma').textContent = `${data[0].player2_name}(赤)`;
   }
   playerNames = [data[0].player1_name, data[0].player2_name];
   if (data[0].player1_uid === myUid) {
