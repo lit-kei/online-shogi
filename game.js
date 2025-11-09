@@ -155,20 +155,21 @@ async function load() {
   }
 }
 
+let animating = false;
 function renderState() {
   switch (state) {
     case "P1W":
-      if (role === 1) createConfetti();
+      if (role === 1 && !animating) createConfetti();
 
       const message1 = role == 0 ? "対局終了" : role == 1 ? "勝利" : "敗北";
-      showEndEffect(message1);
+      if (!animating) showEndEffect(message1);
       resignBtn.style.display = 'none';
       statusEl.textContent = '対局終了　' + playerNames[0] + '(青) の勝利！';
       break;
     case "P2W":
-      if (role === 2) createConfetti();
+      if (role === 2 && !animating) createConfetti();
       const message2 = role == 0 ? "対局終了" : role == 2 ? "勝利" : "敗北";
-      showEndEffect(message2);
+      if (!animating) showEndEffect(message2);
       resignBtn.style.display = 'none';
       statusEl.textContent = '対局終了　' + playerNames[1] + '(赤) の勝利！';
       break;
@@ -1044,6 +1045,7 @@ resignBtn.addEventListener("click", async () => {
 
 
 function showEndEffect(message) {
+  animating = true;
   const effect = document.getElementById("end-effect");
 
   effect.textContent = message;
@@ -1055,10 +1057,11 @@ function showEndEffect(message) {
     effect.classList.remove("show");
     setTimeout(() => {
       effect.classList.add("hidden");
+      animating = false;
     }, 1000);
-  }, 4000);
+  }, 5000);
 }
-function createConfetti(count = 150) {
+function createConfetti(count = 400) {
   const container = document.getElementById("confetti-container");
   if (!container) return;
 
@@ -1076,15 +1079,15 @@ function createConfetti(count = 150) {
 
       // 初期位置（画面下から）
       this.x = boardEl.offsetWidth * 0.5 + (Math.random() - 0.5) * boardEl.offsetWidth;
-      this.y = 150 + (Math.random() * 100);
+      this.y = 250 + (Math.random() *100);
       this.el.style.left = this.x + "px";
       this.el.style.top = this.y + "px";
-      this.threshold = Math.random() * 2 + 3;
+      this.threshold = Math.random() * 1 + 2;
 
       // 初速度
       this.vx = (Math.random() - 0.5) * 3;
-      this.vy = - (6 + Math.random() * 4);
-      this.gravity = 0.03 + Math.random() * 0.1;
+      this.vy = - (6 + Math.random() * 1);
+      this.gravity = 0.02 + Math.random() * 0.05;
       this.angle = Math.random() * 360;
       this.vr = (Math.random() - 0.5) * 10;
 
@@ -1102,7 +1105,7 @@ function createConfetti(count = 150) {
     }
 
     isOut() {
-      return this.y > 400;
+      return this.y > 500;
     }
 
     remove() {
