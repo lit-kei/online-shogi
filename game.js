@@ -66,6 +66,8 @@ const komadaiWhiteEl = document.getElementById("komadai-white");
 const modal = document.getElementById('modal');
 const message = document.getElementById('message');
 const statusEl = document.getElementById('status');
+const anaBtn = document.getElementById('ana-btn');
+const resignBtn = document.getElementById("resign-button");
 
 const myUid = localStorage.getItem('shogi-uid') || "";
 
@@ -83,6 +85,7 @@ let isHost = null;
 let interval = null;
 let state = null;
 let playerNames = [];
+let analysis = false;
 
 async function load() {
   const { data, error } = await supabase
@@ -103,14 +106,20 @@ async function load() {
     document.getElementById('p2-koma').textContent = `${data[0].player2_name}(赤)`;
   }
   playerNames = [data[0].player1_name, data[0].player2_name];
+  anaBtn.style.display = 'block';
+  resignBtn.style.display = 'block';
   if (data[0].player1_uid === myUid) {
     role = roles.player1;
     isHost = true;
+
   } else if (data[0].player2_uid === myUid) {
     role = roles.player2;
     isHost = false;
   } else {
     role = roles.audience;
+    analysis = true;
+    anaBtn.style.display = 'none';
+    resignBtn.style.display = 'none';
   }
   boardState = cloneBoard(data[0].info.board);
   last = data[0].info.last || [-1, -1];
@@ -149,9 +158,11 @@ async function load() {
 function renderState() {
   switch (state) {
     case "P1W":
+      resignBtn.style.display = 'none';
       statusEl.textContent = '対局終了　' + playerNames[0] + '(青) の勝利！';
       break;
     case "P2W":
+      resignBtn.style.display = 'none';
       statusEl.textContent = '対局終了　' + playerNames[1] + '(赤) の勝利！';
       break;
   
@@ -180,6 +191,15 @@ function renderNumber() {
 
 function renderBoard() {
   boardEl.innerHTML = "";
+  for (const child of Array.from(arrowLayer.children)) {
+  if (child.tagName !== "defs") arrowLayer.removeChild(child);
+}  // 配列もリセット
+  arrows.length = 0;
+
+  // （必要なら現在の描画中要素もリセット）
+  currentArrow = null;
+  currentCircle = null;
+  startSquare = null;
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
       const sq = document.createElement("div");
@@ -228,6 +248,16 @@ function renderHistory() {
   }
 }
 async function onSquareClick(e) {
+  if (analysis === true) return;
+  for (const child of Array.from(arrowLayer.children)) {
+  if (child.tagName !== "defs") arrowLayer.removeChild(child);
+}  // 配列もリセット
+  arrows.length = 0;
+
+  // （必要なら現在の描画中要素もリセット）
+  currentArrow = null;
+  currentCircle = null;
+  startSquare = null;
   const sq = e.currentTarget;
   const r = Number(sq.dataset.r);
   const c = Number(sq.dataset.c);
@@ -410,6 +440,16 @@ function getLegalMoves(koma, board,p) {
     return {moves: safeMoves, change};
 }
 function onKomadaiClick(e) {
+  if (analysis === true) return;
+  for (const child of Array.from(arrowLayer.children)) {
+  if (child.tagName !== "defs") arrowLayer.removeChild(child);
+}  // 配列もリセット
+  arrows.length = 0;
+
+  // （必要なら現在の描画中要素もリセット）
+  currentArrow = null;
+  currentCircle = null;
+  startSquare = null;
     const sq = e.currentTarget;
     const p = sq.dataset.p;
     const t = Number(sq.dataset.t);
@@ -504,6 +544,7 @@ async function makeMove(from, to) {
   const {error} = await supabase
       .from("rooms")
       .update({
+        status: "FINISHED",
         info: {
           board: boardState,
           komadai: komadai,
@@ -716,6 +757,46 @@ const channel = supabase
   )
   .subscribe();
 
+anaBtn.addEventListener('click', () => {
+    anaBtn.classList.toggle('on');
+    analysis = !analysis;
+      selected = null;
+      put = null;
+      clearHighlights();
+});
+document.getElementById('delete').addEventListener('click', () => {
+  for (const child of Array.from(arrowLayer.children)) {
+    if (child.tagName !== "defs") arrowLayer.removeChild(child);
+  }  // 配列もリセット
+  arrows.length = 0;
+
+  // （必要なら現在の描画中要素もリセット）
+  currentArrow = null;
+  currentCircle = null;
+  startSquare = null;
+});
+window.addEventListener('keydown', (e) => {
+    if (e.code == 'Enter') {
+    if(role != roles.audience) {
+      anaBtn.classList.toggle('on');
+      analysis = !analysis;
+      selected = null;
+      put = null;
+      clearHighlights();
+    } else {
+        for (const child of Array.from(arrowLayer.children)) {
+          if (child.tagName !== "defs") arrowLayer.removeChild(child);
+        }  // 配列もリセット
+        arrows.length = 0;
+
+        // （必要なら現在の描画中要素もリセット）
+        currentArrow = null;
+        currentCircle = null;
+        startSquare = null;
+    }
+    }
+});
+
 // ブラウザを閉じる・離れるときに購読解除
 window.addEventListener('beforeunload', async () => {
   try {
@@ -725,4 +806,226 @@ window.addEventListener('beforeunload', async () => {
     try { channel.unsubscribe(); } catch (_) {}
   }
 });
+function getSquareFromMouse(e) {
+  const rect = boardEl.getBoundingClientRect();
+  const boardX = e.clientX - boardEl.offsetLeft - 30;
+  const boardY = e.clientY - boardEl.offsetTop - 70;
 
+  const squareSize = boardEl.clientWidth / 9; // ボーダー除外のサイズ
+  function check (n) {
+    if (n > 8) return 8;
+    if (n < 0) return 0;
+    return n;
+  }
+  const c = check(Math.floor(boardX / squareSize));
+  const r = check(Math.floor(boardY / squareSize));
+  return {
+    r: r + 1,
+    c: c + 1,
+    centerX: (c) * squareSize + squareSize / 2 + 54,
+    centerY: (r) * squareSize + squareSize / 2 + 54
+  };
+}
+
+const arrows = [];
+// === SVGレイヤー ===
+const arrowLayer = document.getElementById("arrow-layer");
+
+// 矢印マーカー
+const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+marker.setAttribute("id", "arrowhead");
+marker.setAttribute("markerWidth", "10");
+marker.setAttribute("markerHeight", "10");
+marker.setAttribute("refX", "10");
+marker.setAttribute("refY", "5");
+marker.setAttribute("orient", "auto");
+marker.setAttribute("markerUnits", "strokeWidth");
+
+const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+polygon.setAttribute("points", "0 0, 10 5, 0 10");
+polygon.setAttribute("fill", "limegreen");
+
+marker.appendChild(polygon);
+defs.appendChild(marker);
+arrowLayer.appendChild(defs);
+
+let currentArrow = null;
+let currentCircle = null;
+let startSquare = null;
+
+if (boardEl.offsetHeight > 500) {
+
+  boardEl.addEventListener("mousedown", (e) => {
+    if (!analysis) return;
+    startSquare = getSquareFromMouse(e);
+
+    // circle（常に追加しておく。表示は後で切り替える）
+    currentCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    currentCircle.setAttribute("cx", startSquare.centerX);
+    currentCircle.setAttribute("cy", startSquare.centerY);
+    currentCircle.setAttribute("r", 30);
+    currentCircle.setAttribute("stroke", "limegreen");
+    currentCircle.setAttribute("stroke-width", 4);
+    currentCircle.setAttribute("fill", "none");
+    currentCircle.style.display = 'block'; // 最初は表示しておく（有れば円表示）
+    arrowLayer.appendChild(currentCircle);
+
+    // line（矢印）
+    currentArrow = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    currentArrow.setAttribute("x1", startSquare.centerX);
+    currentArrow.setAttribute("y1", startSquare.centerY);
+    currentArrow.setAttribute("x2", startSquare.centerX);
+    currentArrow.setAttribute("y2", startSquare.centerY);
+    currentArrow.setAttribute("stroke", "limegreen");
+    currentArrow.setAttribute("stroke-width", "3");
+    currentArrow.setAttribute("stroke-linecap", "round");
+    currentArrow.setAttribute("marker-end", "url(#arrowhead)");
+    currentArrow.style.display = 'none'; // 最初は非表示
+    arrowLayer.appendChild(currentArrow);
+  });
+
+  boardEl.addEventListener("mousemove", (e) => {
+    if (!currentArrow || !currentCircle) return;
+    const sq = getSquareFromMouse(e);
+    currentArrow.setAttribute("x2", sq.centerX);
+    currentArrow.setAttribute("y2", sq.centerY);
+
+    // 始点と終点が同じマスなら円表示、違えば矢印表示
+    const x1 = parseFloat(currentArrow.getAttribute("x1"));
+    const y1 = parseFloat(currentArrow.getAttribute("y1"));
+    const x2 = parseFloat(currentArrow.getAttribute("x2"));
+    const y2 = parseFloat(currentArrow.getAttribute("y2"));
+
+    if (x1 === x2 && y1 === y2) {
+      currentArrow.style.display = 'none';
+      currentCircle.style.display = 'block';
+    } else {
+      currentArrow.style.display = 'block';
+      currentCircle.style.display = 'none';
+    }
+  });
+
+  // 確定／重複削除処理を厳密に行う
+  window.addEventListener("mouseup", (e) => {
+    if (!currentArrow || !currentCircle) return;
+
+    // 最終座標を取得（マスにスナップ済みの getSquareFromMouse を使う）
+    const sq = getSquareFromMouse(e);
+    currentArrow.setAttribute("x2", sq.centerX);
+    currentArrow.setAttribute("y2", sq.centerY);
+    currentCircle.setAttribute("cx", parseFloat(currentArrow.getAttribute("x1")));
+    currentCircle.setAttribute("cy", parseFloat(currentArrow.getAttribute("y1")));
+
+    const x1 = parseFloat(currentArrow.getAttribute("x1"));
+    const y1 = parseFloat(currentArrow.getAttribute("y1"));
+    const x2 = parseFloat(currentArrow.getAttribute("x2"));
+    const y2 = parseFloat(currentArrow.getAttribute("y2"));
+
+    if (x1 === x2 && y1 === y2) {
+      // === 円の確定 or 削除 ===
+      const existingCircleIndex = arrows.findIndex(a =>
+        a.type === "circle" && a.cx === x1 && a.cy === y1
+      );
+
+      if (existingCircleIndex !== -1) {
+        // 既存の円を削除（既存要素）
+        const existing = arrows[existingCircleIndex];
+        if (existing.el && existing.el.parentNode === arrowLayer) {
+          arrowLayer.removeChild(existing.el);
+        }
+        arrows.splice(existingCircleIndex, 1);
+
+        // そして描画中の currentCircle は DOM から削除（追加済みなので消す）
+        if (currentCircle.parentNode === arrowLayer) arrowLayer.removeChild(currentCircle);
+      } else {
+        // 新規円として確定：表示はそのまま、配列に追加
+        currentCircle.style.display = 'block';
+        arrows.push({ type: "circle", cx: x1, cy: y1, el: currentCircle });
+      }
+
+      // 描画中の矢印要素は不要なので削除（存在するなら）
+      if (currentArrow.parentNode === arrowLayer) arrowLayer.removeChild(currentArrow);
+
+    } else {
+      // === 矢印の確定 or 削除 ===
+      const existingArrowIndex = arrows.findIndex(a =>
+        a.type === "arrow" &&
+        a.x1 === x1 && a.y1 === y1 && a.x2 === x2 && a.y2 === y2
+      );
+
+      if (existingArrowIndex !== -1) {
+        // 既存の矢印を削除
+        const existing = arrows[existingArrowIndex];
+        if (existing.el && existing.el.parentNode === arrowLayer) {
+          arrowLayer.removeChild(existing.el);
+        }
+        arrows.splice(existingArrowIndex, 1);
+
+        // currentArrow（まだ追加済み）も削除して残さない
+        if (currentArrow.parentNode === arrowLayer) arrowLayer.removeChild(currentArrow);
+      } else {
+        // 新規矢印として確定（currentArrow は既に arrowLayer に追加済み）
+        currentArrow.style.display = 'block';
+        arrows.push({ type: "arrow", x1, y1, x2, y2, el: currentArrow });
+        // currentCircle（同座標でないので DOM にあっても非表示にして削除）
+        if (currentCircle.parentNode === arrowLayer) arrowLayer.removeChild(currentCircle);
+      }
+    }
+
+    // リセット
+    currentArrow = null;
+    currentCircle = null;
+    startSquare = null;
+  });
+}
+let resignClickedOnce = false;
+
+resignBtn.addEventListener("click", async () => {
+  if (role === roles.audience || state == 'P1W' || state == 'P2W') return;
+  if (!resignClickedOnce) {
+    // 1回目の押下：確認モードにする
+    resignClickedOnce = true;
+    resignBtn.classList.add('once');
+    resignBtn.textContent = "もう一度押すと投了";
+    resignBtn.style.backgroundColor = "#d35400"; // 少し濃いオレンジに変化
+
+    // 一定時間でリセット（例：3秒）
+    setTimeout(() => {
+      resignClickedOnce = false;
+      resignBtn.textContent = "投了";
+      resignBtn.classList.remove('once');
+    }, 3000);
+  } else {
+    // 2回目の押下：投了確定
+    resignClickedOnce = false;
+    resignBtn.textContent = "投了";
+    resignBtn.classList.remove('once');
+    if (isHost === false) {
+      state = 'P1W';
+    } else {
+      state = 'P2W';
+    }
+    renderState();
+
+  const {error} = await supabase
+      .from("rooms")
+      .update({
+        status: "FINISHED",
+        info: {
+          board: boardState,
+          komadai: komadai,
+          currentPlayer: currentPlayer,
+          last: last,
+          count: count,
+          history: history,
+          lastMove: lastMove,
+          state: state
+        }
+      })
+      .eq("id", roomId)
+    if (error) {
+      console.error(error);
+    }
+  }
+});

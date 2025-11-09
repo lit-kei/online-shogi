@@ -19,15 +19,18 @@ h1 {
   margin: 0 0 12px 0;
   color: var(--text-light);
 }
+h3 {
+  margin-bottom: 0;
+}
 .wrapper {
   display: flex;
   gap: 20px;
-  min-height: 680px;
+  min-height: 630px;
   align-items: flex-start;
 }
 .board-container {
   background: var(--bg);
-  padding: 50px;
+  padding: 50px 50px 0;
   border-radius: 10px;
   box-shadow: 0 6px 18px rgba(255, 255, 255, 0.08);
   position: relative;
@@ -140,7 +143,8 @@ h1 {
 }
 .controls {
   display: flex;
-  gap: 40px;
+  gap: 30px;
+  flex-wrap: wrap;
   align-items: center;
 }
 .moves pre {
@@ -166,9 +170,84 @@ button {
   color: #f4e1b0;
   cursor: pointer;
   transition: background-color 0.2s;
+  outline: none;
 }
 button:hover {
   background-color: var(--button-hover);
+}
+button.analysis {
+    display: none;
+    position: relative;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: background-color 0.3s, box-shadow 0.3s ease;
+}
+button.analysis:hover {
+    box-shadow: 0 0 10px 2px #5dade2;
+}
+/* 光沢用の擬似要素 */
+button.analysis.on::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -150%; /* 最初は左外側に配置 */
+    width: 200%;
+    height: 200%;
+    background: rgba(255,255,255,0.3);
+    transform: rotate(45deg);
+    animation: shine 1s infinite;
+}
+button.delete {
+    /*display: none;*/
+    background-color: #db3434;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+}
+button.delete:hover {
+    box-shadow: 0 0 10px 2px #e25d5d;
+}
+
+/* 光沢がスライドするアニメーション */
+@keyframes shine {
+    0% {
+        left: -150%;
+    }
+    50% {
+        left: 50%;
+    }
+    100% {
+        left: 150%;
+    }
+}
+#resign-button {
+  display: none;
+  background-color: #e67e22;      /* 明るいオレンジ */
+  color: #fff3e0;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+#resign-button:hover {
+  background-color: #f39c12 !important;      /* ちょっと明るめに */
+}
+
+#resign-button.once:hover {
+  background-color: #b93500 !important;      /* ちょっと明るめに */
+}
+#resign-button:active {
+  background-color: #d35400 !important;      /* 押下時は濃いオレンジ */
 }
 .title {
   margin: 0;
@@ -214,5 +293,21 @@ button:hover {
   .board {
     width: 360px;
     height: 360px;
+  }
+  
+  .yoko-nums {
+    width: 330px; /* 盤面に合わせて調整 */
+    top: 30px;
+    left: 70px;
+  }
+
+  .tate-nums {
+    height: 330px; /* 盤面に合わせて調整 */
+    top: 70px;
+    right: 30px;
+  }
+
+  .num {
+    font-size: 13px;
   }
 }
