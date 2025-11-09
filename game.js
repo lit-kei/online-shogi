@@ -158,10 +158,17 @@ async function load() {
 function renderState() {
   switch (state) {
     case "P1W":
+      if (role === 1) createConfetti();
+
+      const message1 = role == 0 ? "対局終了" : role == 1 ? "勝利" : "敗北";
+      showEndEffect(message1);
       resignBtn.style.display = 'none';
       statusEl.textContent = '対局終了　' + playerNames[0] + '(青) の勝利！';
       break;
     case "P2W":
+      if (role === 2) createConfetti();
+      const message2 = role == 0 ? "対局終了" : role == 2 ? "勝利" : "敗北";
+      showEndEffect(message2);
       resignBtn.style.display = 'none';
       statusEl.textContent = '対局終了　' + playerNames[1] + '(赤) の勝利！';
       break;
@@ -1029,3 +1036,95 @@ resignBtn.addEventListener("click", async () => {
     }
   }
 });
+
+
+
+
+
+
+
+function showEndEffect(message) {
+  const effect = document.getElementById("end-effect");
+
+  effect.textContent = message;
+  effect.classList.remove("hidden");
+
+  requestAnimationFrame(() => effect.classList.add("show"));
+
+  setTimeout(() => {
+    effect.classList.remove("show");
+    setTimeout(() => {
+      effect.classList.add("hidden");
+    }, 1000);
+  }, 4000);
+}
+function createConfetti(count = 150) {
+  const container = document.getElementById("confetti-container");
+  if (!container) return;
+
+  const confettis = [];
+
+  class Confetti {
+    constructor() {
+      this.el = document.createElement("div");
+      this.el.className = "confetti";
+
+      const colors = ["#ff4d4d", "#ffd633", "#66ccff", "#66ff99", "#ff99ff", "#ffffff"];
+      this.el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      this.el.style.width = 8 + Math.random() * 8 + "px";
+      this.el.style.height = 10 + Math.random() * 12 + "px";
+
+      // 初期位置（画面下から）
+      this.x = boardEl.offsetWidth * 0.5 + (Math.random() - 0.5) * boardEl.offsetWidth;
+      this.y = 150 + (Math.random() * 100);
+      this.el.style.left = this.x + "px";
+      this.el.style.top = this.y + "px";
+      this.threshold = Math.random() * 2 + 3;
+
+      // 初速度
+      this.vx = (Math.random() - 0.5) * 3;
+      this.vy = - (6 + Math.random() * 4);
+      this.gravity = 0.03 + Math.random() * 0.1;
+      this.angle = Math.random() * 360;
+      this.vr = (Math.random() - 0.5) * 10;
+
+      
+      container.appendChild(this.el);
+    }
+
+    update() {
+      //this.vy += this.gravity;
+      if (this.vy < this.threshold) this.vy += this.gravity;
+      this.x += this.vx;
+      this.y += this.vy;
+      this.angle += this.vr;
+      this.el.style.transform = `translate(${this.x}px, ${this.y}px) rotate(${this.angle}deg)`;
+    }
+
+    isOut() {
+      return this.y > 400;
+    }
+
+    remove() {
+      this.el.remove();
+    }
+  }
+
+  for (let i = 0; i < count; i++) {
+    confettis.push(new Confetti());
+  }
+
+  function animate() {
+    for (let i = confettis.length - 1; i >= 0; i--) {
+      const c = confettis[i];
+      c.update();
+      if (c.isOut()) {
+        c.remove();
+        confettis.splice(i, 1);
+      }
+    }
+    if (confettis.length > 0) requestAnimationFrame(animate);
+  }
+
+  animate();
+}
