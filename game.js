@@ -1152,7 +1152,7 @@ function getKifu() {
   console.log(txt);
 }
 window.getKifu = getKifu;
-function newPosToSfen(to) {
+function newPosToSfen(pos) {
 
   const file = pos.c;
   const rank = 8 - pos.r;
