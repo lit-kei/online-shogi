@@ -86,6 +86,7 @@ let interval = null;
 let state = null;
 let playerNames = [];
 let analysis = false;
+let historyMoves = [];
 
 async function load() {
   const { data, error } = await supabase
@@ -128,6 +129,7 @@ async function load() {
   count = data[0].info.count;
   put = null;
   history = data[0].info.history;
+  historyMoves = data[0].info.historyMoves;
   lastMove = data[0].info.lastMove;
   komadai.black = data[0].info.komadai.black;
   komadai.white = data[0].info.komadai.white;
@@ -543,6 +545,7 @@ async function makeMove(from, to) {
   }
 
   history.push(moveStr);
+  historyMoves.push({from, to});
   renderState();
   renderBoard();
   renderKomadai();
@@ -560,6 +563,7 @@ async function makeMove(from, to) {
           last: last,
           count: count,
           history: history,
+          historyMoves: historyMoves,
           lastMove: lastMove,
           state: state
         }
@@ -740,6 +744,7 @@ const channel = supabase
         komadai.black = row.info.komadai?.black ? {...row.info.komadai.black} : komadai.black;
         komadai.white = row.info.komadai?.white ? {...row.info.komadai.white} : komadai.white;
         history = row.info.history ?? history;
+        historyMoves = row.info.historyMoves ?? historyMoves;
         state = row.info.state ?? state;
 
         // nowMoves を再計算（自分の手番なら）
@@ -1027,6 +1032,7 @@ resignBtn.addEventListener("click", async () => {
           last: last,
           count: count,
           history: history,
+          historyMoves: historyMoves,
           lastMove: lastMove,
           state: state
         }
@@ -1133,10 +1139,25 @@ function createConfetti(count = 400) {
 }
 function getKifu() {
   let txt = "";
-  for (let i = 0; i < history.length; i++) {
+  for (let i = 0; i < historyMoves.length; i++) {
+    const e = historyMoves[i];
     txt += String(i + 1);
-    txt += " " + history[i] + "\n";
+    if (e.from.put) {
+      txt += `${newPosToSfen(e.to)}${mapping[from.t].display}打`;
+    } else {
+      txt += `${newPosToSfen(e.to)}${mapping[boardState[e.to.r][e.to.c].t].display}${e.to.promoted === null ? "" : e.to.promoted ? "成" : "不成"}(${e.from.c + 1}${9 - e.from.r})`;
+    }
+    txt += " " + historyMoves[i] + "\n";
   }
   console.log(txt);
 }
 window.getKifu = getKifu;
+function newPosToSfen(to) {
+
+  const file = pos.c;
+  const rank = 8 - pos.r;
+  if (last[0] == file && last[1] == rank) return '同';
+  last = [file, rank];
+  return `${toJa[file][0]}${toJa[rank][1]}`;
+
+}
