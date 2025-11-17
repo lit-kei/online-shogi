@@ -150,6 +150,7 @@ document.getElementById('createRoom').addEventListener('click', async () => {
             count: 0,
             currentPlayer : "white",
             history: [],
+            historyMoves: [],
             lastMove: null
         },
         player1_name: playerName,
