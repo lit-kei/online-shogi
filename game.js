@@ -105,6 +105,10 @@ async function load() {
     message.textContent = `${data[0].player1_name}(青) vs ${data[0].player2_name}(赤)`;
     document.getElementById('p1-koma').textContent = `${data[0].player1_name}(青)`;
     document.getElementById('p2-koma').textContent = `${data[0].player2_name}(赤)`;
+  } else if (data[0].status == 'FINISHED') {
+    message.textContent = `${data[0].player1_name}(青) vs ${data[0].player2_name}(赤)`;
+    document.getElementById('p1-koma').textContent = `${data[0].player1_name}(青)`;
+    document.getElementById('p2-koma').textContent = `${data[0].player2_name}(赤)`;
   }
   playerNames = [data[0].player1_name, data[0].player2_name];
   anaBtn.style.display = 'block';
@@ -1138,9 +1142,12 @@ function createConfetti(count = 400) {
   animate();
 }
 function getKifu() {
-  let txt = "";
+  let txt = "手数----指手---------消費時間--\n";
   for (let i = 0; i < historyMoves.length; i++) {
     const e = historyMoves[i];
+    if (Number.isInteger(e.t)) {
+      e.t = mapping[e.t].display;
+    }
     txt += String(i + 1);
     if (e.from.put) {
       txt += ` ${newPosToSfen(e.to)}${e.t}打`;
@@ -1156,8 +1163,6 @@ function newPosToSfen(pos) {
 
   const file = pos.c + 1;
   const rank = 8 - pos.r + 1;
-  if (last[0] == file && last[1] == rank) return '同';
-  last = [file, rank];
   return `${toJa[file][0]}${toJa[rank][1]}`;
 
 }
