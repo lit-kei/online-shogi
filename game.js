@@ -545,7 +545,7 @@ async function makeMove(from, to) {
   }
 
   history.push(moveStr);
-  historyMoves.push({from, to, t: mapping[boardState[to.r][to.c]].display});
+  historyMoves.push({from, to, t: mapping[boardState[to.r][to.c].t].display});
   renderState();
   renderBoard();
   renderKomadai();
