@@ -1131,3 +1131,13 @@ function createConfetti(count = 400) {
 
   animate();
 }
+
+function getKifu() {
+  let txt = "";
+  for (let i = 0; i < history.length; i++) {
+    txt += String(i + 1);
+    txt += " " + history[i] + "¥n";
+  }
+  console.log(txt);
+}
+window.getKifu = getKifu;
