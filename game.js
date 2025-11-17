@@ -545,7 +545,7 @@ async function makeMove(from, to) {
   }
 
   history.push(moveStr);
-  historyMoves.push({from, to});
+  historyMoves.push({from, to, t: mapping[to.r][to.c].display});
   renderState();
   renderBoard();
   renderKomadai();
@@ -1143,9 +1143,9 @@ function getKifu() {
     const e = historyMoves[i];
     txt += String(i + 1);
     if (e.from.put) {
-      txt += `${newPosToSfen(e.to)}${mapping[from.t].display}打`;
+      txt += `${newPosToSfen(e.to)}${e.t}打`;
     } else {
-      txt += `${newPosToSfen(e.to)}${mapping[boardState[e.to.r][e.to.c].t].display}${e.to.promoted === null ? "" : e.to.promoted ? "成" : "不成"}(${e.from.c + 1}${9 - e.from.r})`;
+      txt += `${newPosToSfen(e.to)}${e.t}${e.to.promoted === null ? "" : e.to.promoted ? "成" : "不成"}(${e.from.c + 1}${9 - e.from.r})`;
     }
     txt += " " + historyMoves[i] + "\n";
   }
