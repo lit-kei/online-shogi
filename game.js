@@ -523,7 +523,7 @@ async function makeMove(from, to) {
       komadai[owner][base]++;
     }
     boardState[to.r][to.c] = { ...piece };
-    moveStr = `${posToSfen(to)}${mapping[boardState[to.r][to.c].t].display}${promoted === null ? "" : promoted ? "成" : "不成"}(${9 - from.c}${1 + from.r})`;
+    moveStr = `${posToSfen(to)}${mapping[piece.t].display}${promoted === null ? "" : promoted ? "成" : "不成"}(${9 - from.c}${1 + from.r})`;
     if (promoted) boardState[to.r][to.c].t = promote[boardState[to.r][to.c].t];
     boardState[from.r][from.c] = null;
   }
