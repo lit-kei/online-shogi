@@ -1154,8 +1154,8 @@ function getKifu() {
 window.getKifu = getKifu;
 function newPosToSfen(pos) {
 
-  const file = pos.c;
-  const rank = 8 - pos.r;
+  const file = pos.c + 1;
+  const rank = 8 - pos.r + 1;
   if (last[0] == file && last[1] == rank) return '同';
   last = [file, rank];
   return `${toJa[file][0]}${toJa[rank][1]}`;
