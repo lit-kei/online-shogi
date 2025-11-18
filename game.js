@@ -1142,7 +1142,7 @@ function createConfetti(count = 400) {
   animate();
 }
 function getKifu() {
-  let txt = "手数----指手---------消費時間--\n";
+  let txt = "";
   for (let i = 0; i < historyMoves.length; i++) {
     const e = historyMoves[i];
     if (Number.isInteger(e.t)) {
