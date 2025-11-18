@@ -508,6 +508,7 @@ function askPromotion() {
 }
 async function makeMove(from, to) {
   let moveStr = "";
+    count++;
   if (from.put) {
     boardState[to.r][to.c] = {t:from.t,p:currentPlayer};
     komadai[currentPlayer][from.t]--;
@@ -518,7 +519,6 @@ async function makeMove(from, to) {
     const dest = boardState[to.r][to.c];
     if (!piece) return;
     let promoted = to.promoted;
-    count++;
     if (dest) {
       const captured = { ...dest };
       const base = demote(captured.t);
@@ -1152,7 +1152,12 @@ function getKifu() {
     if (e.from.put) {
       txt += ` ${newPosToSfen(e.to)}${e.t}打`;
     } else {
-      txt += ` ${newPosToSfen(e.to)}${e.t}${e.to.promoted === null ? "" : e.to.promoted ? "成" : "不成"}(${e.from.c + 1}${9 - e.from.r})`;
+      if (e.to.promoted) {
+        const t = demote(findMapping(e.t));
+        txt += ` ${newPosToSfen(e.to)}${mapping[t].display}成(${e.from.c + 1}${9 - e.from.r})`;
+      } else {
+        txt += ` ${newPosToSfen(e.to)}${e.t}${e.to.promoted === null ? "" : "不成"}(${e.from.c + 1}${9 - e.from.r})`;
+      }
     }
     txt += "\n";
   }
@@ -1165,4 +1170,13 @@ function newPosToSfen(pos) {
   const rank = 8 - pos.r + 1;
   return `${toJa[file][0]}${toJa[rank][1]}`;
 
+}
+function findMapping(p) {
+  
+  for (const num in mapping) {
+    const list = mapping[num];
+    if (list.display == p) return parseInt(num);
+  }
+
+  throw "認識できない駒 " + p;
 }
