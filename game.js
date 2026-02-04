@@ -559,7 +559,7 @@ async function makeMove(from, to) {
   const {error} = await supabase
       .from("rooms")
       .update({
-        status: "FINISHED",
+        status: "PLAYING",
         info: {
           board: boardState,
           komadai: komadai,

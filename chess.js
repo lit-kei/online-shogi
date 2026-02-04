@@ -106,7 +106,7 @@ async function load() {
   history = data[0].info.history;
   historyMoves = data[0].info.historyMoves;
   lastMove = data[0].info.lastMove;
-  if ((role == 1 && currentPlayer == "white") || (role == 2 && currentPlayer == "black")) nowMoves = getLegalMoves(boardState, currentPlayer);
+  if (((role == 1 && currentPlayer == "white") || (role == 2 && currentPlayer == "black")) && data[0].status == "PLAYING") nowMoves = getLegalMoves(boardState, currentPlayer);
   possibleMoves = [];
   state = data[0].info.state;
   renderState();
@@ -155,18 +155,18 @@ function renderState() {
 }
 
 function renderNumber() {
-//  const yoko = document.getElementById('yoko');
-//  yoko.innerHTML = '';
+  const yoko = document.getElementById('yoko');
+  yoko.innerHTML = '';
   const tate = document.getElementById('tate');
   tate.innerHTML = '';
   for (let i = 1; i < 9; i++) {
-//    const yokoN = document.createElement('span');
-//    yokoN.className = 'num';
-//    yokoN.textContent = toJa[isHost === false ? i : 10 - i][0];
-//    yoko.appendChild(yokoN);
+    const yokoN = document.createElement('span');
+    yokoN.className = 'num';
+    yokoN.textContent = alphabet[isHost === false ? 8 - i : i - 1];
+    yoko.appendChild(yokoN);
     const tateN = document.createElement('span');
     tateN.className = 'num';
-    tateN.textContent = isHost === false ? 10 - i : i;
+    tateN.textContent = isHost === false ? i : 9 - i;
     tate.appendChild(tateN);
   }
 }
@@ -177,24 +177,23 @@ function renderBoard() {
   if (child.tagName !== "defs") arrowLayer.removeChild(child);
 }  // 配列もリセット
   arrows.length = 0;
-
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const sq = document.createElement("div");
       sq.className = "square";
-      sq.dataset.r = isHost === false ? reverse(r, "white") : r;
-      sq.dataset.c = isHost === false ? reverse(c, "white") : c;
-      const piece = boardState[isHost === false ? reverse(r, "white") : r][isHost === false ? reverse(c, "white") : c];
+      sq.dataset.r = isHost === false ? reverse(r, "black") : r;
+      sq.dataset.c = isHost === false ? reverse(c, "black") : c;
+      const piece = boardState[isHost === false ? reverse(r, "black") : r][isHost === false ? reverse(c, "black") : c];
       if (piece) {
         const p = document.createElement("img");
         p.className = "piece";
         p.src = "assets/" + (piece.p == "white" ? "w" : "b") + mapping[piece.t].image + ".svg";
         p.draggable = false;
         p.dataset.player = piece.p;
-        p.dataset.r = isHost === false ? reverse(r, "white") : r;
-        p.dataset.c = isHost === false ? reverse(c, "white") : c;
+        p.dataset.r = isHost === false ? reverse(r, "black") : r;
+        p.dataset.c = isHost === false ? reverse(c, "black") : c;
         
-        if (role == 1 && piece.p == "white") {
+        if (role == 1 && piece.p == "black") {
           sq.style.cursor = 'pointer';
         } else if (role == 2 && piece.p == "black") {
           sq.style.cursor = 'pointer';
@@ -202,15 +201,10 @@ function renderBoard() {
         sq.appendChild(p);
       }
       
-      if (lastMove !== null && !lastMove.from.put) {
-        if (lastMove.from.r == (isHost === false ? reverse(r, "white") : r) && lastMove.from.c == (isHost === false ? reverse(c, "white") : c)) {
-          sq.classList.add('last-from');
-        }
-      }
       if (
         lastMove?.to &&
-        (isHost === false ? reverse(r, "white") : r) === lastMove.to.r &&
-        lastMove.to.c === (isHost === false ? reverse(c, "white") : c)
+        (isHost === false ? reverse(r, "black") : r) === lastMove.to.r &&
+        lastMove.to.c === (isHost === false ? reverse(c, "black") : c)
       ) {
         sq.classList.add('last-to');
       }
@@ -264,7 +258,7 @@ async function onSquareClick(e) {
     let promoted = null;
     const piece = boardState[selected.r][selected.c];
     // promotion
-    if (piece.t == 1 && to.r == reverse(piece.p, 0)) {
+    if (piece.t == 1 && to.r == reverse(0, piece.p)) {
         promoted = await askPromotionUI(piece.p);
     }
 
@@ -274,7 +268,7 @@ async function onSquareClick(e) {
     clearHighlights();
   }
 }
-function reverse(p, r) {
+function reverse(r, p) {
     return p == "white" ? r : 7 - r;
 }
 function canCastle(board, player, side) {
@@ -314,14 +308,14 @@ function getMoveList(board, r, c, enPassant, friendFire = false) {
     moves.forEach(move => {
         if (move.inf == false) {
             if (e.t == 1) {
-                if (r == reverse(e.p, 6)) {
+                if (r == reverse(6, e.p)) {
 
-                    const cell = board[reverse(e.p, 5)][c];
+                    const cell = board[reverse(5, e.p)][c];
                     if (!cell) {
-                        list.push([reverse(e.p, 5), c, false]);
+                        list.push([reverse(5, e.p), c, false]);
 
-                        const newCell = board[reverse(e.p, 4)][c];
-                        if (!newCell) list.push([reverse(e.p, 4), c, false]);
+                        const newCell = board[reverse(4, e.p)][c];
+                        if (!newCell) list.push([reverse(4, e.p), c, false]);
                     }
                 } else {
                     const newR = move.pos[0] * s + r;
@@ -520,12 +514,17 @@ async function makeMove(from, to) {
 
   
   currentPlayer = currentPlayer === "black" ? "white" : "black";
+  
+  lastMove = {from, to};
 
-  const newBoardState = cloneBoard(boardState);
-  boardHistory.push({boardState: newBoardState, last: [...last], currentPlayer, count});
-  makeHistory(moveStr);
+  
+
+  history.push(moveStr);
+  historyMoves.push({from, to, t: mapping[boardState[to.r][to.c].t].display});
+  renderState();
   renderBoard();
   updateTurnUI();
+  renderHistory();
 
   await new Promise(resolve => setTimeout(resolve, 1));
 
@@ -537,12 +536,35 @@ async function makeMove(from, to) {
   if (nowMoves.length === 0) {
       const checked = isKingInCheck(boardState, currentPlayer);
       if (checked) {
-        alert(`${currentPlayer == "white" ? "先手" : "後手"} の勝ちです。`);
+          if (isHost === false) {
+            state = 'P2W';
+        } else {
+            state = 'P1W';
+        }
       } else {
           // ステイルメイト（千日手など）→引き分け扱い
-        alert("引き分けです。");
+          state = "STALEMATE";
       }
   }
+    const {error} = await supabase
+        .from("rooms")
+        .update({
+            status: "PLAYING",
+            info: {
+            board: boardState,
+            currentPlayer: currentPlayer,
+            last: last,
+            count: count,
+            history: history,
+            historyMoves: historyMoves,
+            lastMove: lastMove,
+            state: state
+            }
+        })
+        .eq("id", roomId)
+    if (error) {
+        console.error(error);
+    }
   
 }
 
@@ -641,6 +663,197 @@ load();
 
 
 
+// subscribe 部分をこのように置き換えます
+const channel = supabase
+  .channel(`rooms:${roomId}`) // 任意の名前
+  .on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'rooms',
+      filter: `id=eq.${roomId}`
+    },
+    payload => {
+      const oldData = payload.old;
+      const newData = payload.new;
+      // ✅ 新しくplayer2が参加したときの処理
+      if (oldData.player2_uid == null && newData.player2_uid) {
+        load();
+        return;
+      }
+
+      // ✅ player1_heartbeat / player2_heartbeat のみ変更なら無視
+      const onlyHeartbeatChanged =
+        (oldData.player1_heartbeat !== newData.player1_heartbeat &&
+        oldData.player2_heartbeat === newData.player2_heartbeat) ||
+        (oldData.player2_heartbeat !== newData.player2_heartbeat &&
+        oldData.player1_heartbeat === newData.player1_heartbeat);
+
+      if (onlyHeartbeatChanged) {
+        return;
+      }
+      // payload.new に更新後の row オブジェクトが入るはず
+      const row = payload?.new;
+      if (!row || !row.info) return;
+
+      // info の中身だけ差分反映する（破壊的に上書きせず、安全に）
+      try {
+        // 既存の boardState 等を上書きする前に null/未定義チェック
+        if (row.info.board) {
+          boardState = cloneBoard(row.info.board);
+        }
+        last = row.info.last || [-1, -1];
+        lastMove = row.info.lastMove ?? null;
+        currentPlayer = row.info.currentPlayer ?? currentPlayer;
+        count = row.info.count ?? count;
+        history = row.info.history ?? history;
+        historyMoves = row.info.historyMoves ?? historyMoves;
+        state = row.info.state ?? state;
+
+        // nowMoves を再計算（自分の手番なら）
+        if ((role == 1 && currentPlayer == "white") || (role == 2 && currentPlayer == "black")) {
+          nowMoves = getLegalMoves(boardState, currentPlayer).moves;
+        } else {
+          nowMoves = [];
+        }
+
+        // UI 更新（安全なレンダリング）
+        renderState()
+        renderBoard();
+        updateTurnUI();
+        renderHistory();
+
+      } catch (err) {
+        console.error('Realtime apply error:', err);
+        // 最終手段で load() を呼ぶ（例外時のみ）
+        load();
+      }
+    }
+  )
+  .subscribe();
+
+  
+let resignClickedOnce = false;
+
+resignBtn.addEventListener("click", async () => {
+  if (role === roles.audience || state == 'P1W' || state == 'P2W') return;
+  if (!resignClickedOnce) {
+    // 1回目の押下：確認モードにする
+    resignClickedOnce = true;
+    resignBtn.classList.add('once');
+    resignBtn.textContent = "もう一度押すと投了";
+    resignBtn.style.backgroundColor = "#d35400"; // 少し濃いオレンジに変化
+
+    // 一定時間でリセット（例：3秒）
+    setTimeout(() => {
+      resignClickedOnce = false;
+      resignBtn.textContent = "投了";
+      resignBtn.classList.remove('once');
+    }, 3000);
+  } else {
+    // 2回目の押下：投了確定
+    resignClickedOnce = false;
+    resignBtn.textContent = "投了";
+    resignBtn.classList.remove('once');
+    if (isHost === false) {
+      state = 'P1W';
+    } else {
+      state = 'P2W';
+    }
+    renderState();
+
+  const {error} = await supabase
+      .from("rooms")
+      .update({
+        status: "FINISHED",
+        info: {
+          board: boardState,
+          komadai: komadai,
+          currentPlayer: currentPlayer,
+          last: last,
+          count: count,
+          history: history,
+          historyMoves: historyMoves,
+          lastMove: lastMove,
+          state: state
+        }
+      })
+      .eq("id", roomId)
+    if (error) {
+      console.error(error);
+    }
+  }
+});
+
+anaBtn.addEventListener('click', () => {
+    anaBtn.classList.toggle('on');
+    analysis = !analysis;
+      selected = null;
+      clearHighlights();
+});
+document.getElementById('delete').addEventListener('click', () => {
+  for (const child of Array.from(arrowLayer.children)) {
+    if (child.tagName !== "defs") arrowLayer.removeChild(child);
+  }  // 配列もリセット
+  arrows.length = 0;
+
+  // （必要なら現在の描画中要素もリセット）
+  currentArrow = null;
+  currentCircle = null;
+  startSquare = null;
+});
+window.addEventListener('keydown', (e) => {
+    if (e.code == 'Enter') {
+    if(role != roles.audience) {
+      anaBtn.classList.toggle('on');
+      analysis = !analysis;
+      selected = null;
+      clearHighlights();
+    } else {
+        for (const child of Array.from(arrowLayer.children)) {
+          if (child.tagName !== "defs") arrowLayer.removeChild(child);
+        }  // 配列もリセット
+        arrows.length = 0;
+
+        // （必要なら現在の描画中要素もリセット）
+        currentArrow = null;
+        currentCircle = null;
+        startSquare = null;
+    }
+    }
+});
+
+// ブラウザを閉じる・離れるときに購読解除
+window.addEventListener('beforeunload', async () => {
+  try {
+    await supabase.removeChannel(channel);
+  } catch (e) {
+    // 互換性により channel.unsubscribe() を使う実装もある
+    try { channel.unsubscribe(); } catch (_) {}
+  }
+});
+function getSquareFromMouse(e) {
+  const rect = boardEl.getBoundingClientRect();
+  const boardX = e.clientX - boardEl.offsetLeft - 30;
+  const boardY = e.clientY - boardEl.offsetTop - 50;
+
+  const squareSize = boardEl.clientWidth / 8; // ボーダー除外のサイズ
+  function check (n) {
+    if (n > 7) return 7;
+    if (n < 0) return 0;
+    return n;
+  }
+  const c = check(Math.floor(boardX / squareSize));
+  const r = check(Math.floor(boardY / squareSize));
+  console.log(boardX, boardY, e.clientX, e.clientY, r, c, boardEl.offsetLeft, boardEl.offsetTop);
+  return {
+    r: r + 1,
+    c: c + 1,
+    centerX: (c) * squareSize + squareSize / 2 + 54,
+    centerY: (r) * squareSize + squareSize / 2 + 24
+  };
+}
 
 const arrows = [];
 // === SVGレイヤー ===
@@ -679,7 +892,7 @@ if (boardEl.offsetHeight > 500) {
     currentCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     currentCircle.setAttribute("cx", startSquare.centerX);
     currentCircle.setAttribute("cy", startSquare.centerY);
-    currentCircle.setAttribute("r", 30);
+    currentCircle.setAttribute("r", 33.75);
     currentCircle.setAttribute("stroke", "limegreen");
     currentCircle.setAttribute("stroke-width", 4);
     currentCircle.setAttribute("fill", "none");
@@ -794,3 +1007,91 @@ if (boardEl.offsetHeight > 500) {
     startSquare = null;
   });
 }   
+
+function showEndEffect(message) {
+  animating = true;
+  const effect = document.getElementById("end-effect");
+
+  effect.textContent = message;
+  effect.classList.remove("hidden");
+
+  requestAnimationFrame(() => effect.classList.add("show"));
+
+  setTimeout(() => {
+    effect.classList.remove("show");
+    setTimeout(() => {
+      effect.classList.add("hidden");
+      animating = false;
+    }, 1000);
+  }, 5000);
+}
+function createConfetti(count = 400) {
+  const container = document.getElementById("confetti-container");
+  if (!container) return;
+
+  const confettis = [];
+
+  class Confetti {
+    constructor() {
+      this.el = document.createElement("div");
+      this.el.className = "confetti";
+
+      const colors = ["#ff4d4d", "#ffd633", "#66ccff", "#66ff99", "#ff99ff", "#ffffff"];
+      this.el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      this.el.style.width = 8 + Math.random() * 8 + "px";
+      this.el.style.height = 10 + Math.random() * 12 + "px";
+
+      // 初期位置（画面下から）
+      this.x = boardEl.offsetWidth * 0.5 + (Math.random() - 0.5) * boardEl.offsetWidth;
+      this.y = 250 + (Math.random() *100);
+      this.el.style.left = this.x + "px";
+      this.el.style.top = this.y + "px";
+      this.threshold = Math.random() * 1 + 2;
+
+      // 初速度
+      this.vx = (Math.random() - 0.5) * 3;
+      this.vy = - (6 + Math.random() * 1);
+      this.gravity = 0.02 + Math.random() * 0.05;
+      this.angle = Math.random() * 360;
+      this.vr = (Math.random() - 0.5) * 10;
+
+      
+      container.appendChild(this.el);
+    }
+
+    update() {
+      //this.vy += this.gravity;
+      if (this.vy < this.threshold) this.vy += this.gravity;
+      this.x += this.vx;
+      this.y += this.vy;
+      this.angle += this.vr;
+      this.el.style.transform = `translate(${this.x}px, ${this.y}px) rotate(${this.angle}deg)`;
+    }
+
+    isOut() {
+      return this.y > 500;
+    }
+
+    remove() {
+      this.el.remove();
+    }
+  }
+
+  for (let i = 0; i < count; i++) {
+    confettis.push(new Confetti());
+  }
+
+  function animate() {
+    for (let i = confettis.length - 1; i >= 0; i--) {
+      const c = confettis[i];
+      c.update();
+      if (c.isOut()) {
+        c.remove();
+        confettis.splice(i, 1);
+      }
+    }
+    if (confettis.length > 0) requestAnimationFrame(animate);
+  }
+
+  animate();
+}
