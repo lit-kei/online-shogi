@@ -3,14 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>オンライン将棋</title>
+    <title>オンライン将棋&チェス</title>
     <link rel="stylesheet" href="style.css">
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
 </head>
 <body>
     
     <div class="container">
-        <h1>オンライン将棋 ロビー</h1>
+        <h1>オンライン将棋&チェス ロビー</h1>
+        
+        <div class="input">
+            <div style="display: flex; gap: 40px; justify-content: center; align-items: center; margin: 20px 0;">
+                <label class="toggle-button">
+                    <input type="checkbox" id="toggle"/>
+                </label>
+                <span id="shogi">将棋</span>
+                <span id="chess">チェス</span>
+            </div>
+        </div>
         <button id="createRoom" class="start-btn">部屋を作る</button>
         <p>部屋一覧</p>
         <div id="games">

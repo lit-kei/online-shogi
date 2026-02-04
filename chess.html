@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>オンラインチェス</title>
+    <link rel="stylesheet" href="chess.css">
+</head>
+<body>
+    <h3 id="message">対戦相手を待っています</h3>
+    <div class="wrapper">
+    <div class="base">
+        <div class="board-container">
+            
+        <div class="yoko-nums" id="yoko">
+            <span class="num">a</span>
+            <span class="num">b</span>
+            <span class="num">c</span>
+            <span class="num">d</span>
+            <span class="num">e</span>
+            <span class="num">f</span>
+            <span class="num">g</span>
+            <span class="num">h</span>
+        </div>
+        <div class="tate-nums" id="tate">
+            <span class="num">8</span>
+            <span class="num">7</span>
+            <span class="num">6</span>
+            <span class="num">5</span>
+            <span class="num">4</span>
+            <span class="num">3</span>
+            <span class="num">2</span>
+            <span class="num">1</span>
+        </div>
+        <div id="board" class="board" aria-label="チェス盤"></div>
+        <svg id="arrow-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></svg>
+        <div id="end-effect" class="hidden"></div>
+        <!--<div id="confetti-container"></div>-->
+        
+        
+        <div id="promotionOverlay" class="hidden">
+        <div class="promotion-box">
+            <img data-piece="5" />
+            <img data-piece="2" />
+            <img data-piece="4" />
+            <img data-piece="3" />
+        </div>
+        </div>
+        
+        </div>
+
+
+
+        </div>
+        <div class="side">
+            
+            <div class="controls">
+            <div>手番: <strong id="turn"></strong></div>
+            <button class="analysis" id="ana-btn">推論モード</button>
+            <button class="delete" id="delete">推論を消去</button>
+            <button id="resign-button">投了</button>
+            </div>
+
+            <div class="moves">
+            <div style="font-weight:700;margin-bottom:8px">指し手</div>
+            <pre id="history" style="height:200px;overflow:auto"></pre>
+            </div>
+        
+        </div>
+        </div>
+    <h3 id="status"></h3>
+
+    <a href="index.html" style="color: white;">ロビーへ戻る</a>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="chess.js" type="module"></script>
+</body>
+</html>

@@ -15,7 +15,19 @@ const initialSetup = [
 [ {t:2,p:'black'},{t:3,p:'black'},{t:4,p:'black'},{t:5,p:'black'},{t:14,p:'black'},{t:5,p:'black'},{t:4,p:'black'},{t:3,p:'black'},{t:2,p:'black'} ],
 ];
 
+const chessInitialSetup = [
+[ {t:2,p:'black',moved:false},{t:3,p:'black',moved:false},{t:4,p:'black',moved:false},{t:5,p:'black',moved:false},{t:6,p:'black',moved:false},{t:4,p:'black',moved:false},{t:3,p:'black',moved:false},{t:2,p:'black',moved:false} ],
+[ {t:1,p:'black',moved:false},{t:1,p:'black',moved:false},{t:1,p:'black',moved:false},{t:1,p:'black',moved:false},{t:1,p:'black',moved:false},{t:1,p:'black',moved:false},{t:1,p:'black',moved:false},{t:1,p:'black',moved:false} ],
+[ null,null,null,null,null,null,null,null ],
+[ null,null,null,null,null,null,null,null ],
+[ null,null,null,null,null,null,null,null ],
+[ null,null,null,null,null,null,null,null ],
+[ {t:1,p:'white',moved:false},{t:1,p:'white',moved:false},{t:1,p:'white',moved:false},{t:1,p:'white',moved:false},{t:1,p:'white',moved:false},{t:1,p:'white',moved:false},{t:1,p:'white',moved:false},{t:1,p:'white',moved:false} ],
+[ {t:2,p:'white',moved:false},{t:3,p:'white',moved:false},{t:4,p:'white',moved:false},{t:5,p:'white',moved:false},{t:6,p:'white',moved:false},{t:4,p:'white',moved:false},{t:3,p:'white',moved:false},{t:2,p:'white',moved:false} ]
+];
+
 const gamesEl = document.getElementById('games');
+const toggle = document.getElementById('toggle')
 
 let playerName = localStorage.getItem('shogi-name');
 if (!playerName) {
@@ -29,6 +41,49 @@ if (!localStorage.getItem('shogi-uid')) {
   localStorage.setItem('shogi-uid', crypto.randomUUID());
 }
 const myUid = localStorage.getItem('shogi-uid');
+async function tryJoinRoom(roomId) {
+  // ① 部屋情報取得
+  const { data: room, error } = await supabase
+    .from("rooms")
+    .select("player1_uid, player2_uid, game_type")
+    .eq("id", roomId)
+    .single();
+
+  if (error || !room) {
+    alert("部屋が存在しません");
+    return;
+  }
+
+  // ② 遷移先を決定
+  const targetPage =
+    room.game_type === "chess" ? "chess.html" : "game.html";
+
+  // ③ 再接続
+  if (room.player1_uid === myUid || room.player2_uid === myUid) {
+    window.location.href = `./${targetPage}?room=${roomId}`;
+    return;
+  }
+
+  // ④ 入室試行（RPC）
+  const { data, error: joinError } = await supabase.rpc("join_room", {
+    room_id: roomId,
+    uid: myUid,
+    name: playerName
+  });
+
+  if (joinError) {
+    alert("入室に失敗しました");
+    return;
+  }
+
+  if (!data) {
+    alert("この部屋はすでに満員です");
+    return;
+  }
+
+  // ⑤ 成功
+  window.location.href = `./${targetPage}?room=${roomId}`;
+}
 
 async function loadRooms() {
     const { data: roomData, error } = await supabase.from("rooms").select("*");
@@ -43,35 +98,10 @@ async function loadRooms() {
             const gameDiv = document.createElement('div');
             gameDiv.className = 'game';
             gameDiv.addEventListener('click', async () => {
-                if (room.player1_uid === myUid || room.player2_uid === myUid) {
-                    alert('あなたはこの試合に参加しています。');
-                    return;
-                }
-                if (room.player2_uid === null) {
-                    
-                    const { data, error } = await supabase
-                        .from("rooms")
-                        .update({
-                        player2_name: playerName,
-                        player2_uid: myUid,
-                        player2_heartbeat: new Date().toISOString(),
-                        status: "PLAYING"
-                        })
-                        .eq('id', room.id);
-
-                    if (error) {
-                        console.error("部屋入室エラー:", error);
-                        alert("部屋に入れませんでした");
-                        return;
-                    }
-
-                    window.location.href = `./game.html?room=${room.id}`;
-
-                } else {
-                    window.location.href = `./game.html?room=${room.id}`;
-
-                }
+            await tryJoinRoom(room.id);
             });
+
+
             const p1Span = document.createElement('span');
             p1Span.className = 'p1';
             p1Span.textContent = room.player1_name;
@@ -102,27 +132,7 @@ const channel = supabase
         const gameDiv = document.createElement('div');
         gameDiv.className = 'game';
         gameDiv.addEventListener('click', async () => {
-            if (payload.new.player2_uid === null) {
-                    
-                const { data, error } = await supabase
-                    .from("rooms")
-                    .update({
-                    player2_name: playerName,
-                    player2_uid: myUid,
-                    player2_heartbeat: new Date().toISOString(),
-                    status: "PLAYING"
-                    })
-                    .eq('id', payload.new.id);
-
-                if (error) {
-                    console.error("部屋入室エラー:", error);
-                    alert("部屋に入れませんでした");
-                    return;
-                }
-
-                window.location.href = `./game.html?room=${payload.new.id}`;
-
-            }
+        await tryJoinRoom(payload.new.id);
         });
         const p1Span = document.createElement('span');
         p1Span.className = 'p1';
@@ -140,77 +150,65 @@ const channel = supabase
   )
   .subscribe();
 
-document.getElementById('createRoom').addEventListener('click', async () => {
-    const { data, error } = await supabase
-        .from("rooms")
-        .insert([{
-        info: {
-            board: initialSetup,
-            komadai: { white: {}, black: {} },
-            count: 0,
-            currentPlayer : "white",
-            history: [],
-            historyMoves: [],
-            lastMove: null
-        },
-        player1_name: playerName,
-        player1_uid: myUid,
-        player1_heartbeat: new Date().toISOString(),
-        status: "WAITING"
-        }])
-        .select("id")
-        .single();
+  document.getElementById('createRoom').addEventListener('click', async () => {
+  const gameType = getSelectedGameType();
 
-    if (error) {
-        console.error("部屋作成エラー:", error);
-        alert("部屋を作れませんでした");
-        return;
-    }
+  const info =
+    gameType === "shogi"
+      ? {
+          board: initialSetup,
+          komadai: { white: {}, black: {} },
+          count: 0,
+          currentPlayer: "black",
+          history: [],
+          historyMoves: [],
+          lastMove: null
+        }
+      : {
+          board: chessInitialSetup,
+          currentPlayer: "white",
+          count: 0,
+          historyMoves: [],
+          history: [],
+          lastMove: null
+        };
 
-    const roomId = data.id;
+  const { data, error } = await supabase
+    .from("rooms")
+    .insert([{
+      game_type: gameType,
+      info,
+      player1_name: playerName,
+      player1_uid: myUid,
+      player1_heartbeat: new Date().toISOString(),
+      status: "WAITING"
+    }])
+    .select("id")
+    .single();
 
-    // 作成した部屋に遷移
-    window.location.href = `./game.html?room=${roomId}`;
-    
+  if (error) {
+    alert("部屋を作れませんでした");
+    return;
+  }
+const targetPage = gameType === "chess" ? "chess.html" : "game.html";
+
+window.location.href = `./${targetPage}?room=${data.id}`;
 });
 
 async function joinRoom(roomId) {
-  const { data: room } = await supabase
-    .from("rooms")
-    .select("*")
-    .eq("id", roomId)
-    .single();
-
-  if (!room) {
-    alert("部屋が存在しません");
-    return;
-  }
-
-  const myUid = localStorage.getItem("shogi-uid");
-
-  // ✅ 自分がすでに先手または後手として登録されている場合 → 再接続扱い
-  if (room.player1_uid === myUid || room.player2_uid === myUid) {
-    alert("再接続しました");
-    window.location.href = `./game.html?room=${roomId}`;
-    return;
-  }
-
-  // ✅ player2 が空いていれば入室
-  if (!room.player2_uid) {
-    await supabase
-      .from("rooms")
-      .update({
-        player2_name: localStorage.getItem("shogi-name"),
-        player2_uid: myUid,
-        player2_heartbeat: new Date().toISOString(),
-        status: "PLAYING"
-      })
-      .eq("id", roomId)
-      .is("player2_uid", null); // 不正上書き防止
-    window.location.href = `./game.html?room=${roomId}`;
-    return;
-  }
-
-  // ❌ player1, player2 がどちらも埋まっていて、自分でもない
-  alert("この部屋は満員です");
+      await tryJoinRoom(roomId);
 }
+function getSelectedGameType() {
+  return toggle.checked ? "chess" : "shogi";
+}
+
+document.getElementById('shogi').addEventListener('click', () => {
+    if (toggle.checked) {
+        toggle.checked = false;
+    }
+});
+document.getElementById('chess').addEventListener('click', () => {
+    if (!toggle.checked) {
+        toggle.checked = true;
+    }
+});

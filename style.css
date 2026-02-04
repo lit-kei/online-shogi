@@ -1,3 +1,7 @@
+:root {
+  --accent1: #ff8d8d;
+  --accent2: #75bbff;
+}
 body {
     margin: 0;
     padding: 0;
@@ -64,4 +68,61 @@ p {
 }
 .game span {
     display: block;
+}
+
+/* 切替トグル */
+.toggle-button {
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 60px;
+    height: 30px;
+    border-radius: 30px;
+    box-sizing: content-box;
+    background-color: #888;
+    cursor: pointer;
+    transition: background-color .4s;
+}
+
+span#shogi {
+    color: color-mix(in srgb, var(--accent1), transparent 34%);
+    font-weight: 400;
+    transition: all 0.5s ease;
+    cursor: pointer;
+}
+.toggle-button:not(:has(:checked)) + span#shogi {
+    color: var(--accent1);
+    font-weight: bold;
+    transform: scale(1.1);
+}
+span#chess {
+    color: color-mix(in srgb, var(--accent2), transparent 34%);
+    font-weight: 400;
+    transition: all 0.5s ease;
+    cursor: pointer;
+}
+.toggle-button:has(:checked) ~ span#chess {
+    color: var(--accent2);
+    font-weight: bold;
+    transform: scale(1.1);
+}
+
+.toggle-button::before {
+    position: absolute;
+    left: 5px;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background-color: var(--accent1);
+    content: '';
+    transition: left .4s;
+}
+
+.toggle-button:has(:checked)::before {
+    left: 30px;
+    background-color: var(--accent2);
+}
+
+.toggle-button input {
+    display: none;
 }
