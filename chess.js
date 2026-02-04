@@ -246,7 +246,6 @@ async function onSquareClick(e) {
     }
     selected = { r, c };
     sq.classList.add("selected");
-    console.log(nowMoves);
     possibleMoves = nowMoves.filter(e => e.from.r == r && e.from.c == c);
     possibleMoves.forEach(e => {
       document.querySelector(`.square[data-r='${e.to.r}'][data-c='${e.to.c}']`).classList.add("highlight");
@@ -849,7 +848,6 @@ function getSquareFromMouse(e) {
   }
   const c = check(Math.floor(boardX / squareSize));
   const r = check(Math.floor(boardY / squareSize));
-  console.log(boardX, boardY, e.clientX, e.clientY, r, c, boardEl.offsetLeft, boardEl.offsetTop);
   return {
     r: r + 1,
     c: c + 1,
