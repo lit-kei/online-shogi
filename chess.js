@@ -194,14 +194,16 @@ function renderBoard() {
         p.dataset.r = isHost === false ? reverse(r, "black") : r;
         p.dataset.c = isHost === false ? reverse(c, "black") : c;
         
-        if (role == 1 && piece.p == "black") {
+        if (role == 1 && piece.p == "white") {
           sq.style.cursor = 'pointer';
         } else if (role == 2 && piece.p == "black") {
           sq.style.cursor = 'pointer';
         }
         sq.appendChild(p);
       }
-      
+      if (lastMove != null && lastMove.from.r == (isHost === false ? reverse(r, "black") : r) && lastMove.from.c == (isHost === false ? reverse(c, "black") : c)) {
+          sq.classList.add('last-from');
+        }
       if (
         lastMove?.to &&
         (isHost === false ? reverse(r, "black") : r) === lastMove.to.r &&
@@ -462,6 +464,7 @@ async function makeMove(from, to) {
     count++;
     const piece = boardState[from.r][from.c];
     if (to.castle) {
+        enPassantTarget = null;
         
         const row = piece.p === "white" ? 7 : 0;
 
@@ -559,6 +562,7 @@ async function makeMove(from, to) {
             history: history,
             historyMoves: historyMoves,
             lastMove: lastMove,
+            enPassantTarget: enPassantTarget,
             state: state
             }
         })
