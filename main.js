@@ -66,7 +66,7 @@ async function tryJoinRoom(roomId) {
 
   // ④ 入室試行（RPC）
   const { data, error: joinError } = await supabase.rpc("join_room", {
-    room_id: roomId,
+    room_id: Number(roomId),
     uid: myUid,
     name: playerName
   });
