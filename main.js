@@ -170,7 +170,8 @@ const channel = supabase
           count: 0,
           historyMoves: [],
           history: [],
-          lastMove: null
+          lastMove: null,
+          enPassantTarget: null
         };
 
   const { data, error } = await supabase

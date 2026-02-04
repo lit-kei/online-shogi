@@ -104,9 +104,10 @@ async function load() {
   selected = null;
   count = data[0].info.count;
   history = data[0].info.history;
+  enPassantTarget = data[0].info.enPassantTarget;
   historyMoves = data[0].info.historyMoves;
   lastMove = data[0].info.lastMove;
-  if (((role == 1 && currentPlayer == "white") || (role == 2 && currentPlayer == "black")) && data[0].status == "PLAYING") nowMoves = getLegalMoves(boardState, currentPlayer);
+  if (((role == 1 && currentPlayer == "white") || (role == 2 && currentPlayer == "black")) && data[0].status == "PLAYING") nowMoves = getLegalMoves(boardState, currentPlayer, enPassantTarget);
   possibleMoves = [];
   state = data[0].info.state;
   renderState();
@@ -245,6 +246,7 @@ async function onSquareClick(e) {
     }
     selected = { r, c };
     sq.classList.add("selected");
+    console.log(nowMoves);
     possibleMoves = nowMoves.filter(e => e.from.r == r && e.from.c == c);
     possibleMoves.forEach(e => {
       document.querySelector(`.square[data-r='${e.to.r}'][data-c='${e.to.c}']`).classList.add("highlight");
@@ -710,10 +712,11 @@ const channel = supabase
         history = row.info.history ?? history;
         historyMoves = row.info.historyMoves ?? historyMoves;
         state = row.info.state ?? state;
+        enPassantTarget = row.info.enPassantTarget ?? enPassantTarget;
 
         // nowMoves を再計算（自分の手番なら）
         if ((role == 1 && currentPlayer == "white") || (role == 2 && currentPlayer == "black")) {
-          nowMoves = getLegalMoves(boardState, currentPlayer).moves;
+          nowMoves = getLegalMoves(boardState, currentPlayer, enPassantTarget);
         } else {
           nowMoves = [];
         }
