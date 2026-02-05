@@ -77,7 +77,7 @@ async function tryJoinRoom(roomId) {
   }
 
   if (!data) {
-    alert("この部屋はすでに満員です");
+  window.location.href = `./${targetPage}?room=${roomId}`;
     return;
   }
 
