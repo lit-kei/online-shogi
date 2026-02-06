@@ -1100,3 +1100,45 @@ function createConfetti(count = 400) {
 
   animate();
 }
+
+
+function boardToFEN() {
+  const pieceMap = {
+    1: "p",
+    2: "r",
+    3: "n",
+    4: "b",
+    5: "q",
+    6: "k"
+  };
+
+  return boardState.map(rank => {
+    let fenRank = "";
+    let empty = 0;
+
+    for (const cell of rank) {
+      if (cell === null) {
+        empty++;
+      } else {
+        if (empty > 0) {
+          fenRank += empty;
+          empty = 0;
+        }
+
+        let piece = pieceMap[cell.t];
+        if (cell.p === "white") {
+          piece = piece.toUpperCase();
+        }
+        fenRank += piece;
+      }
+    }
+
+    if (empty > 0) {
+      fenRank += empty;
+    }
+
+    return fenRank;
+  }).join("/");
+}
+
+window.boardToFEN = boardToFEN
