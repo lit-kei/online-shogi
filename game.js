@@ -1154,9 +1154,9 @@ function getKifu() {
     } else {
       if (e.to.promoted) {
         const t = demote(findMapping(e.t));
-        txt += ` ${newPosToSfen(e.to)}${mapping[t].display}成(${e.from.c + 1}${9 - e.from.r})`;
+        txt += ` ${newPosToSfen(e.to)}${mapping[t].display}成(${9 - e.from.c}${1 + e.from.r})`;
       } else {
-        txt += ` ${newPosToSfen(e.to)}${e.t}${e.to.promoted === null ? "" : "不成"}(${e.from.c + 1}${9 - e.from.r})`;
+        txt += ` ${newPosToSfen(e.to)}${e.t}${e.to.promoted === null ? "" : "不成"}(${9 - e.from.c}${1 + e.from.r})`;
       }
     }
     txt += "\n";
@@ -1166,8 +1166,8 @@ function getKifu() {
 window.getKifu = getKifu;
 function newPosToSfen(pos) {
 
-  const file = pos.c + 1;
-  const rank = 8 - pos.r + 1;
+  const file = 8 - pos.c + 1;
+  const rank = pos.r + 1;
   return `${toJa[file][0]}${toJa[rank][1]}`;
 
 }
